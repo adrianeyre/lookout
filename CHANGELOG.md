@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0](https://github.com/adrianeyre/lookout/compare/v1.2.0...v1.3.0) (2026-11-26)
+
+### Features
+
+* **docker:** volumes under each Container, and delete unused ones ([e8673a9](https://github.com/adrianeyre/lookout/commit/e8673a9fdcaebb71c2b6ec8402ac0d651aa30847))
+
 ## [1.2.0](https://github.com/adrianeyre/lookout/compare/v1.1.0...v1.2.0) (2026-11-26)
 
 ### Features
