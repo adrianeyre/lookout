@@ -249,6 +249,18 @@ To run exactly the Image you verified, pin it by digest in `compose.yaml` (`imag
 These come from the [screenshot harness](apps/web/screenshots/), which renders the real UI with made-up data, never from a real server. `pnpm screenshots` regenerates them.
 
 <p>
+  <img src="docs/images/site-stats-light-desktop.png" alt="Site Stats for notes.example.net over 7 days: visitors, page views and requests, humans and bots, status codes, response time and uptime." width="100%" />
+</p>
+
+<p>
+  <img src="docs/images/volumes-dark-desktop.png" alt="The Containers page's volumes: each Container's volumes under its row, and three unused volumes at the bottom with Delete buttons." width="100%" />
+</p>
+
+<p>
+  <img src="docs/images/docker-disk-light-desktop.png" alt="The Host page's Docker disk Widget: images, Containers, volumes and build cache, with what could be reclaimed and a 90-day trend." width="100%" />
+</p>
+
+<p>
   <img src="docs/images/container-detail-light-desktop.png" alt="A Container's detail view: Image, lifecycle, masked environment variables, and Stop and Restart buttons." width="100%" />
 </p>
 
@@ -259,9 +271,10 @@ These come from the [screenshot harness](apps/web/screenshots/), which renders t
 On a phone:
 
 <p>
-  <img src="docs/images/host-dark-phone.png" alt="The Host page in dark mode on a phone." width="31%" />&nbsp;
-  <img src="docs/images/containers-dark-phone.png" alt="The Containers page in dark mode on a phone: Containers grouped by Compose Project, one Flagged as unhealthy." width="31%" />&nbsp;
-  <img src="docs/images/websites-dark-phone.png" alt="The Websites page in dark mode on a phone: Hosted Sites with their status and response times." width="31%" />
+  <img src="docs/images/host-dark-phone.png" alt="The Host page in dark mode on a phone." width="23%" />&nbsp;
+  <img src="docs/images/containers-dark-phone.png" alt="The Containers page in dark mode on a phone: Containers grouped by Compose Project with their volumes, one Flagged as unhealthy." width="23%" />&nbsp;
+  <img src="docs/images/websites-dark-phone.png" alt="The Websites page in dark mode on a phone: Hosted Sites with their status, response times and today's visitors." width="23%" />&nbsp;
+  <img src="docs/images/site-stats-dark-phone.png" alt="A Site Stats page in dark mode on a phone." width="23%" />
 </p>
 
 ## Footprint

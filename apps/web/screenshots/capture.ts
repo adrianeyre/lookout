@@ -17,7 +17,7 @@ const outDir = fileURLToPath(new URL('../../../docs/images/', import.meta.url));
 
 interface View {
   name: string;
-  page: 'host' | 'containers' | 'detail' | 'websites' | 'settings';
+  page: 'host' | 'containers' | 'detail' | 'websites' | 'site' | 'settings';
   /** Waits until the view is fully drawn, and sets up anything the screenshot shows. */
   prepare(page: Page): Promise<void>;
 }
@@ -75,6 +75,46 @@ const VIEWS: View[] = [
     page: 'websites',
     prepare: async (page) => {
       await page.getByTestId('site-row').nth(3).waitFor();
+    },
+  },
+  {
+    name: 'docker-disk',
+    page: 'host',
+    prepare: async (page) => {
+      await page.getByTestId('docker-disk-chart').waitFor();
+      await page
+        .getByTestId('docker-disk-card')
+        .evaluate((el) => el.closest('.widget')!.scrollIntoView({ block: 'start' }));
+    },
+  },
+  {
+    name: 'volumes',
+    page: 'containers',
+    prepare: async (page) => {
+      await page.getByTestId('container-volume').first().waitFor();
+      await page.getByTestId('unused-volume').first().waitFor();
+      await page
+        .getByTestId('unused-volumes')
+        .evaluate((el) => el.closest('.widget')!.scrollIntoView({ block: 'end' }));
+    },
+  },
+  {
+    name: 'site-stats',
+    page: 'site',
+    prepare: async (page) => {
+      await page.getByTestId('site-visitors-chart').waitFor();
+      await page.getByTestId('site-size-total').waitFor();
+    },
+  },
+  {
+    name: 'site-stats-uptime',
+    page: 'site',
+    prepare: async (page) => {
+      await page.getByTestId('site-uptime').waitFor();
+      await page.getByTestId('site-size-total').waitFor();
+      await page
+        .getByTestId('site-top-pages')
+        .evaluate((el) => el.closest('.widget')!.scrollIntoView({ block: 'start' }));
     },
   },
   {
