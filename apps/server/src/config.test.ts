@@ -10,6 +10,7 @@ describe('loadConfig', () => {
   it('uses the PRD defaults', () => {
     expect(loadConfig(base)).toEqual({
       bindAddress: '127.0.0.1',
+      dataDir: null,
       port: 7777,
       hostRoot: '/host',
       sampleIntervalMs: 2000,

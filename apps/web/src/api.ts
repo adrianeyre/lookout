@@ -1,4 +1,4 @@
-import type { ApiError } from '@lookout/shared';
+import type { ApiError, PasswordChange, SessionInfo } from '@lookout/shared';
 
 export type LoginResult = { ok: true } | { ok: false; message: string };
 
@@ -92,5 +92,34 @@ export async function postJson<T>(url: string, body: unknown = {}): Promise<Fetc
     return { ok: true, value: (await response.json()) as T };
   } catch {
     return { ok: false, status: 0, message: 'Lookout cannot be reached. Check your connection.' };
+  }
+}
+
+/** Whether the password can be changed in Settings, or null if that is not known. */
+export async function passwordChangeable(): Promise<boolean | null> {
+  const result = await getJson<SessionInfo>('/api/session');
+  return result.ok ? result.value.passwordChangeable : null;
+}
+
+/**
+ * Changes the password (Settings). Every other session ends; this one is given a new cookie,
+ * so it stays signed in.
+ */
+export async function changePassword(change: PasswordChange): Promise<LoginResult> {
+  try {
+    const response = await fetch('/api/password', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(change),
+      credentials: 'same-origin',
+    });
+    if (response.status === 401) {
+      window.location.assign('/login');
+      return { ok: false, message: 'Not signed in' };
+    }
+    if (response.ok) return { ok: true };
+    return { ok: false, message: await errorMessage(response, 'The password was not changed') };
+  } catch {
+    return { ok: false, message: 'Lookout cannot be reached. Check your connection.' };
   }
 }

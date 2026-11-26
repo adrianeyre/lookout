@@ -64,7 +64,8 @@ RUN printf '#!/bin/sh\nexec node /app/apps/server/dist/hash-password.js "$@"\n' 
     > /usr/local/bin/hash-password \
   && chmod 755 /usr/local/bin/hash-password \
   && addgroup -S -g 65532 lookout \
-  && adduser -S -D -H -u 65532 -G lookout -h /nonexistent -s /sbin/nologin lookout
+  && adduser -S -D -H -u 65532 -G lookout -h /nonexistent -s /sbin/nologin lookout \
+  && mkdir -m 700 /data && chown 65532:65532 /data
 USER 65532:65532
 
 EXPOSE 7777

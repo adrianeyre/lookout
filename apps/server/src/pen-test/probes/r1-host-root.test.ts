@@ -223,8 +223,13 @@ describe('R1: no route, label or setting feeds a path into HostRoot', () => {
     const pathSettings = [...source.matchAll(/read\('(LOOKOUT_[A-Z_]+)'/g)]
       .map((m) => m[1])
       .filter((name) => /ROOT|PATH|DIR|FILE|MOUNT/.test(name!));
-    expect(pathSettings).toEqual(['LOOKOUT_HOST_ROOT']);
+    // LOOKOUT_DATA_DIR is a path inside Lookout's own Container (its volume for a password
+    // changed in Settings), never the Host's: it must be absolute too, and never reaches HostRoot.
+    expect(pathSettings).toEqual(['LOOKOUT_HOST_ROOT', 'LOOKOUT_DATA_DIR']);
     expect(source).toMatch(/LOOKOUT_HOST_ROOT must be an absolute path/);
+    expect(source).toMatch(/LOOKOUT_DATA_DIR must be an absolute path/);
+    const store = readFileSync(path.join(REPO, 'apps/server/src/auth/password-store.ts'), 'utf8');
+    expect(store).not.toMatch(/HostRoot|hostRoot/);
   });
 
   it('no label is read as a Host path: discovery and actions never reach HostRoot (sound)', () => {

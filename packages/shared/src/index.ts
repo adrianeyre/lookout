@@ -1,5 +1,6 @@
 export type * from './host.ts';
 export type * from './api.ts';
+export { MIN_PASSWORD_LENGTH } from './api.ts';
 export {
   CONTAINER_STATES,
   DEFAULT_LOG_TAIL,
@@ -74,6 +75,7 @@ export {
   siteStatusFor,
   tlsDaysLeft,
   tlsLevel,
+  tlsWindows,
   type HostedSite,
   type SiteCheck,
   type SitePoint,

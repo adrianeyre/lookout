@@ -36,6 +36,11 @@ export interface Config {
   tlsCriticalDays: number;
   /** Hours between scans of the Host's largest folders; 0 scans only when asked. */
   folderScanHours: number;
+  /**
+   * LOOKOUT_DATA_DIR: where a password changed in Settings is kept. Without it the password
+   * can only be changed in .env.
+   */
+  dataDir: string | null;
 }
 
 export class ConfigError extends Error {
@@ -172,6 +177,11 @@ export function loadConfig(env: Env = process.env, options: LoadOptions = {}): C
     );
   }
 
+  const dataDir = read('LOOKOUT_DATA_DIR') ?? null;
+  if (dataDir !== null && !dataDir.startsWith('/')) {
+    problems.push(`LOOKOUT_DATA_DIR must be an absolute path (got "${dataDir}")`);
+  }
+
   // Never echo secret values in error messages.
   const passwordHash = read('LOOKOUT_PASSWORD_HASH');
   if (passwordHash === undefined) {
@@ -230,6 +240,7 @@ export function loadConfig(env: Env = process.env, options: LoadOptions = {}): C
     tlsWarnDays,
     tlsCriticalDays,
     folderScanHours,
+    dataDir,
   };
 }
 
