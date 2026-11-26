@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gateVerdict, summary, type GateIssue } from './release-gate.ts';
+import { gateVerdict, NO_ROUND, summary, type GateIssue } from './release-gate.ts';
 
 const tracking = (state: 'open' | 'closed'): GateIssue => ({
   number: 75,
@@ -67,5 +67,15 @@ describe('the pen-test release gate', () => {
 
   it('fails closed when the tracking issue cannot be found', () => {
     expect(gateVerdict(null, []).pass).toBe(false);
+  });
+
+  it('passes with no round in progress and nothing open', () => {
+    expect(gateVerdict(NO_ROUND, [])).toEqual({ pass: true, blockers: [] });
+  });
+
+  it('still fails on an open high finding with no round in progress', () => {
+    const verdict = gateVerdict(NO_ROUND, [finding(96, 'severity:high')]);
+    expect(verdict.pass).toBe(false);
+    expect(verdict.blockers.map((b) => b.number)).toEqual([96]);
   });
 });

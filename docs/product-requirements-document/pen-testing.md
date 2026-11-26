@@ -56,7 +56,7 @@ Three reasons to do it now:
 
 ### The gate
 
-- **No release while the round is open, nor while a high or critical finding is open.** The release workflow's gate job (`scripts/release-gate.ts`, run before semantic-release) fails while the round's **tracking issue** (#75 for this round) is open, or while any open issue carries `prd:pen-test` and `severity:critical` or `severity:high`, and names what is blocking in the job summary. `:edge` still publishes. Built by #58.
+- **No release while the round is open, nor while a high or critical finding is open.** The release workflow's gate job (`scripts/release-gate.ts`, run before semantic-release) fails while the round's **tracking issue** is open (named by `PEN_TEST_TRACKING_ISSUE` in `release.yml`; empty while no round is in progress; the first round, tracked as #75 in the original repository, is complete), or while any open issue carries `prd:pen-test` and `severity:critical` or `severity:high`, and names what is blocking in the job summary. `:edge` still publishes. Built by #58.
 - **The repository is not made public** while any hypothesis or finding here at `severity:high` or `severity:critical` is open. No check can stop a visibility change, so this rule is also stated in the README's development section.
 - The gate lifts when the tracking issue is closed and every finding above `severity:low` is remediated, or waived in writing by the owner.
 

@@ -33,7 +33,7 @@ jobs:
       ref: ${{ github.event.workflow_run.head_sha }}
 
   # The pen-test release gate (docs/product-requirements-document/pen-testing.md#the-gate):
-  # no versioned release while the round's tracking issue is open, or while an open
+  # no versioned release while a round's tracking issue is open, or while an open
   # prd:pen-test issue is severity:critical or severity:high. :edge above does not wait for
   # it. Runs before semantic-release and reads issues only; it installs no dependencies.
   gate:
@@ -58,8 +58,9 @@ jobs:
       - name: Fail while the pen-test round or a high or critical finding is open
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          # The current round's tracking issue; the next round names its own.
-          PEN_TEST_TRACKING_ISSUE: '75'
+          # The current round's tracking issue; empty while no round is in progress (the
+          # first round closed before the repository moved here). The next round names its own.
+          PEN_TEST_TRACKING_ISSUE: ''
         run: node scripts/release-gate.ts
 
   release:
