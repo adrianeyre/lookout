@@ -32,6 +32,10 @@ _Avoid_: Broken, failed, down
 A Container on the Host whose labels, name, environment or logs are written to attack Lookout or the person viewing it.
 _Avoid_: Malicious app, bad container
 
+**Unused volume**:
+A Docker volume that no Container, running or stopped, mounts. It is listed on the Containers page and can be deleted there.
+_Avoid_: Dangling volume, orphan
+
 **Container Action**:
 An operation that changes a Container's state: start, stop, restart, or remove.
 _Avoid_: Command, operation, control

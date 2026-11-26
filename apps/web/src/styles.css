@@ -1304,6 +1304,51 @@ a.button {
   }
 }
 
+/* A Container's volumes: a full-width line under its row (ADR-0015). */
+.row__volumes {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  min-inline-size: 0;
+  font-size: 0.85rem;
+}
+
+.row__volumes-label {
+  font-weight: 600;
+}
+
+.volumes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-inline-size: 0;
+}
+
+.volume {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.volume__name {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+/* An unused volume: its name and facts, and Delete at the end. */
+.volume-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.row__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .state,
 .health {
   padding: 0 var(--space-2);

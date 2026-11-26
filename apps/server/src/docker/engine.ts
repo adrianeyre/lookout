@@ -6,7 +6,7 @@ import {
   type ContainerStats,
   type LogLine,
 } from '@lookout/shared';
-import type { DockerClient, LogOptions } from './client.ts';
+import type { DockerClient, EngineVolume, LogOptions } from './client.ts';
 import { diskUsageFromEngine, type DiskUsageReport, type EngineDiskUsage } from './disk-usage.ts';
 import {
   LineSplitter,
@@ -420,8 +420,41 @@ export class EngineDockerClient implements DockerClient {
     await this.#call('DELETE', this.#containerPath(id), { force: false, v: false });
   }
 
-  async diskUsage(): Promise<DiskUsageReport> {
-    const raw = await this.#call<EngineDiskUsage>('GET', '/system/df', {}, MAX_ENGINE_DF_BYTES);
+  async diskUsage(types?: readonly 'volume'[]): Promise<DiskUsageReport> {
+    // `type` (Engine API 1.42+) asks only for those parts, which is much quicker; an older
+    // Engine ignores it and answers everything.
+    const query: Query = types && types.length > 0 ? { type: types.join(',') } : {};
+    const raw = await this.#call<EngineDiskUsage>('GET', '/system/df', query, MAX_ENGINE_DF_BYTES);
     return diskUsageFromEngine(raw);
+  }
+
+  async listVolumes(): Promise<EngineVolume[]> {
+    const raw = await this.#call<{
+      Volumes?:
+        | {
+            Name?: string;
+            Driver?: string;
+            CreatedAt?: string;
+            Labels?: Record<string, string> | null;
+          }[]
+        | null;
+    }>('GET', '/volumes', {}, MAX_ENGINE_DF_BYTES);
+    return (raw?.Volumes ?? []).flatMap((volume) => {
+      if (typeof volume.Name !== 'string') return [];
+      const created = volume.CreatedAt ? Date.parse(volume.CreatedAt) : Number.NaN;
+      return [
+        {
+          name: volume.Name,
+          driver: typeof volume.Driver === 'string' ? volume.Driver : 'local',
+          createdAt: Number.isFinite(created) ? created : null,
+          project: volume.Labels?.['com.docker.compose.project'] ?? null,
+        },
+      ];
+    });
+  }
+
+  async removeVolume(name: string): Promise<void> {
+    // Never forced (ADR-0015): Docker refuses a volume any Container uses.
+    await this.#call('DELETE', `/volumes/${encodeURIComponent(name)}`, { force: false });
   }
 }

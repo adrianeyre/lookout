@@ -18,7 +18,7 @@ test('the Content Security Policy allows the whole SPA and blocks nothing it nee
   await login(page);
   await expect(page.getByTestId('memory-card')).toBeVisible();
   await expect(page.locator('.sparkline').first()).toBeVisible();
-  await page.getByRole('link', { name: 'Containers', exact: true }).click();
+  await page.getByRole('link', { name: 'Docker', exact: true }).click();
   await expect(page.getByTestId('container-row').first()).toBeVisible();
   await page.getByRole('link', { name: 'Websites', exact: true }).click();
   await expect(page.getByTestId('site-sparkline').first()).toBeVisible();

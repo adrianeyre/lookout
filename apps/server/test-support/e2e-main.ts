@@ -95,6 +95,20 @@ const shopSiteUrl = `http://store.example:${config.port + 1000}/`;
 const docker = new FakeDocker();
 function seedDocker() {
   docker.reset(fixtureContainers(Date.now(), shopSiteUrl));
+  // Two volumes no Container uses, for the Unused volumes Widget (ADR-0015).
+  docker.volumes.clear();
+  for (const [name, bytes] of [
+    ['old_cache', 12_000_000],
+    ['stray_data', 3_000_000],
+  ] as const) {
+    docker.volumes.set(name, {
+      name,
+      driver: 'local',
+      createdAt: Date.parse('2026-11-20T10:00:00Z'),
+      project: null,
+      bytes,
+    });
+  }
   for (const { id, line } of FIXTURE_LOGS) docker.appendLog(id, line);
 }
 seedDocker();

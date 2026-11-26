@@ -11,3 +11,5 @@ status: accepted
 - Lookout's own Container (label `lookout.self=true`) can never be stopped, restarted or removed through Lookout. This is enforced on the server, not only hidden in the UI.
 - Remove never deletes volumes and never force-removes a running Container.
 - Adding exec later would supersede this ADR and [ADR-0006](./0006-server-sent-events-for-live-data.md).
+
+_Amended 26 November 2026:_ [ADR-0015](./0015-unused-volumes-can-be-deleted.md) adds one more change Lookout can make: deleting a volume no Container uses, with its name typed to confirm and never forced. Container Actions themselves are unchanged.

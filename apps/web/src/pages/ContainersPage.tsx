@@ -21,6 +21,8 @@ import { useContainerStats, useNow } from '../hooks.ts';
 import { useLiveEvent } from '../live.ts';
 import { containerPath } from '../router.ts';
 import { PageGrid } from '../grid/PageGrid.tsx';
+import { ContainerVolumes, UnusedVolumesCard } from '../components/Volumes.tsx';
+import { useVolumes, type VolumesState } from '../volumes.ts';
 
 export function DockerUnavailable() {
   return (
@@ -38,10 +40,12 @@ function ContainerRow({
   container,
   stats,
   now,
+  volumes,
 }: {
   container: ContainerSummary;
   stats: StatsById;
   now: number;
+  volumes: VolumesState;
 }) {
   const flagged = isFlagged(container);
   const ports = publishedPorts(container.ports);
@@ -78,6 +82,7 @@ function ContainerRow({
           </span>
         ))}
       </div>
+      <ContainerVolumes state={volumes} containerId={container.id} />
     </li>
   );
 }
@@ -161,10 +166,13 @@ export function ContainerList({
   snapshot,
   stats,
   now,
+  volumes = { status: 'loading' },
 }: {
   snapshot: ContainersSnapshot;
   stats: StatsById;
   now: number;
+  /** Docker's volumes, shown under the Containers that mount them (ADR-0015). */
+  volumes?: VolumesState;
 }) {
   const [filters, setFilters] = useState<ContainerFilters>(NO_FILTERS);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(readCollapsed);
@@ -213,7 +221,13 @@ export function ContainerList({
               </h2>
               <ul className="rows" id={listId} hidden={!open}>
                 {group.containers.map((container) => (
-                  <ContainerRow key={container.id} container={container} stats={stats} now={now} />
+                  <ContainerRow
+                    key={container.id}
+                    container={container}
+                    stats={stats}
+                    now={now}
+                    volumes={volumes}
+                  />
                 ))}
               </ul>
             </section>
@@ -228,18 +242,27 @@ export function ContainersPage() {
   const snapshot = useLiveEvent('containers');
   const stats = useContainerStats();
   const now = useNow();
+  const volumes = useVolumes();
   return (
     <PageGrid
       page="containers"
       title="Containers"
       widgets={{
         'containers.list': snapshot ? (
-          <ContainerList snapshot={snapshot} stats={stats} now={now} />
+          <ContainerList snapshot={snapshot} stats={stats} now={now} volumes={volumes.state} />
         ) : (
           <p className="muted" role="status">
             Loading Containers…
           </p>
         ),
+        // Volumes need Docker; while it is unavailable the list above says so.
+        ...(snapshot?.available === false
+          ? {}
+          : {
+              'containers.volumes': (
+                <UnusedVolumesCard state={volumes.state} refresh={volumes.refresh} />
+              ),
+            }),
       }}
     />
   );

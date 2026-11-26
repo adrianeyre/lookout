@@ -125,3 +125,12 @@ export {
   type TrafficSource,
   type UptimePoint,
 } from './stats.ts';
+export {
+  VOLUMES_PATH,
+  VOLUME_NAME,
+  volumeDeletePath,
+  type DockerVolume,
+  type VolumeDeleteRequest,
+  type VolumeUse,
+  type VolumesSnapshot,
+} from './volumes.ts';
