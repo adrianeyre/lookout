@@ -1,0 +1,111 @@
+/*
+ * Lookout's look for the Stageshow kit (its --ss-* tokens). The values are the dashboard's
+ * own, from apps/web/src/styles.css: its page, surfaces, borders, text, accent and status
+ * colours, its 12px card radius and 6px control radius, and Inter and JetBrains Mono, which
+ * the page self-hosts. The kit is never edited (site/stageshow/README.md); it is restyled
+ * from here. Light and dark follow the system, which main.tsx passes to each Stage.
+ */
+.lk .ss-stage {
+  --ss-font: Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif;
+  --ss-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --ss-canvas: #f6f8fa;
+  --ss-surface: #ffffff;
+  --ss-chrome: #ffffff;
+  --ss-raised: #ffffff;
+  --ss-well: #e4ecef;
+  --ss-fill: #e2e7ec;
+
+  --ss-ink-1: rgb(13 27 42 / 4%);
+  --ss-ink-2: rgb(13 27 42 / 6%);
+  --ss-ink-3: rgb(13 27 42 / 9%);
+  --ss-ink-4: rgb(13 27 42 / 12%);
+  --ss-ink-5: rgb(13 27 42 / 17%);
+  --ss-line: #d4dae1;
+  --ss-line-faint: #e2e7ec;
+
+  --ss-text-strong: #0d1b2a;
+  --ss-text: #4f5b67;
+  --ss-text-faint: #4f5b67;
+  --ss-icon: #4f5b67;
+  --ss-icon-faint: #9aa5b1;
+
+  --ss-accent: #0b6b70;
+  --ss-accent-2: #8250df;
+  --ss-accent-soft: #dff1f1;
+  --ss-accent-text: #08585c;
+  --ss-success: #1a7f37;
+  --ss-success-soft: #dafbe1;
+  --ss-success-text: #1a7f37;
+  --ss-warning: #9a5b00;
+  --ss-warning-soft: #fff4dc;
+  --ss-warning-text: #9a5b00;
+  --ss-danger: #b42318;
+  --ss-danger-soft: #fde8e6;
+  --ss-danger-text: #b42318;
+
+  --ss-radius-sm: 6px;
+  --ss-radius-md: 6px;
+  --ss-radius-lg: 12px;
+  --ss-radius-window: 12px;
+
+  --ss-shadow-hero:
+    0 0 0 1px rgb(13 27 42 / 8%), 0 30px 60px -18px rgb(11 107 112 / 26%),
+    0 18px 36px -18px rgb(13 27 42 / 24%);
+  --ss-shadow-window: var(--ss-shadow-hero);
+
+  /* Lookout's own colours, for what the kit has no token for. */
+  --lk-meter: #0b6b70;
+  --lk-series-2: #8250df;
+  --lk-on-accent: #ffffff;
+  --lk-on-critical: #ffffff;
+  --lk-surface-muted: #eef1f4;
+  --lk-backdrop: rgb(0 0 0 / 45%);
+}
+
+.lk .ss-stage[data-theme='dark'] {
+  --ss-canvas: #0d1117;
+  --ss-surface: #161b22;
+  --ss-chrome: #161b22;
+  --ss-raised: #1f2630;
+  --ss-well: #0a1417;
+  --ss-fill: #2a313b;
+
+  --ss-ink-1: rgb(240 246 252 / 5%);
+  --ss-ink-2: rgb(240 246 252 / 8%);
+  --ss-ink-3: rgb(240 246 252 / 11%);
+  --ss-ink-4: rgb(240 246 252 / 15%);
+  --ss-ink-5: rgb(240 246 252 / 22%);
+  --ss-line: #30363d;
+  --ss-line-faint: #21262d;
+
+  --ss-text-strong: #f0f6fc;
+  --ss-text: #9ba7b4;
+  --ss-text-faint: #9ba7b4;
+  --ss-icon: #9ba7b4;
+  --ss-icon-faint: #4b5560;
+
+  --ss-accent: #3fb8bd;
+  --ss-accent-2: #c297ff;
+  --ss-accent-soft: #0f2a2c;
+  --ss-accent-text: #63cbcf;
+  --ss-success: #3fb950;
+  --ss-success-soft: #0f2e18;
+  --ss-success-text: #3fb950;
+  --ss-warning: #f0b429;
+  --ss-warning-soft: #3a2a05;
+  --ss-warning-text: #f0b429;
+  --ss-danger: #ff7b72;
+  --ss-danger-soft: #3d1414;
+  --ss-danger-text: #ff7b72;
+
+  --ss-shadow-hero: 0 0 0 1px rgb(240 246 252 / 10%), 0 30px 60px -12px rgb(0 0 0 / 60%);
+  --ss-shadow-window: var(--ss-shadow-hero);
+
+  --lk-meter: #3fb8bd;
+  --lk-series-2: #c297ff;
+  --lk-on-accent: #0d1117;
+  --lk-on-critical: #0d1117;
+  --lk-surface-muted: #1f2630;
+  --lk-backdrop: rgb(0 0 0 / 60%);
+}

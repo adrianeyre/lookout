@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAgeExclude:
+  - '@types/node@26.6.10'
+  - '@types/react@19.3.2'

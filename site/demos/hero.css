@@ -1,0 +1,494 @@
+/*
+ * The hero demo: the dashboard's Containers page (apps/web/src/styles.css), drawn at the
+ * stage's design size in px, so it scales as one picture.
+ */
+.lk-hero {
+  & .ss-stage {
+    overflow: hidden;
+    border-radius: 14px;
+    background: var(--ss-well);
+    font-family: var(--ss-font);
+    font-variant-numeric: tabular-nums;
+    color: var(--ss-text-strong);
+  }
+
+  .lk-window {
+    position: absolute;
+    inset: 18px;
+    box-shadow: var(--ss-shadow-hero);
+  }
+
+  .ss-stage[data-layout='compact'] .lk-window {
+    inset: 10px;
+  }
+
+  .lk-app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--ss-canvas);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  /* The header: brand, navigation, and the summary line (FR-2) */
+  .lk-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 9px 16px;
+    background: var(--ss-surface);
+    border-bottom: 1px solid var(--ss-line);
+  }
+
+  .lk-logo {
+    display: block;
+    height: 22px;
+    width: auto;
+  }
+
+  .lk-nav {
+    display: flex;
+    gap: 2px;
+    color: var(--ss-text);
+    font-weight: 600;
+
+    & > span {
+      padding: 2px 9px;
+      border-radius: var(--ss-radius-sm);
+    }
+
+    & > [data-current] {
+      color: var(--ss-text-strong);
+      background: var(--lk-surface-muted);
+    }
+  }
+
+  /* On a line of its own, so its changing figures never reflow the header. */
+  .lk-summary {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    min-width: 0;
+    color: var(--ss-text);
+    font-size: 11px;
+  }
+
+  .lk-summary__group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 10px;
+    white-space: nowrap;
+  }
+
+  .lk-summary__group + .lk-summary__group {
+    padding-left: 10px;
+    border-left: 1px solid var(--ss-line);
+  }
+
+  .lk-summary__item {
+    color: var(--ss-text-strong);
+    font-weight: 600;
+    transition:
+      color 0.25s,
+      background-color 0.25s;
+  }
+
+  .lk-summary__item[data-flagged] {
+    padding: 0 4px;
+    border-radius: var(--ss-radius-sm);
+    background: var(--ss-danger-soft);
+    color: var(--ss-danger-text);
+  }
+
+  .ss-stage[data-layout='compact'] .lk-summary__group + .lk-summary__group {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  /* The page */
+  .lk-main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .ss-stage[data-layout='compact'] .lk-main {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .ss-stage[data-layout='compact'] .sparkline {
+    height: 14px;
+  }
+
+  .lk-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .lk-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .lk-group__title {
+    color: var(--ss-text);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .lk-rows {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--ss-line);
+    border-radius: var(--ss-radius-lg);
+    background: var(--ss-surface);
+  }
+
+  .lk-row {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(0, 0.95fr) minmax(0, 1.45fr)
+      66px;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 7px 12px 7px 10px;
+    border-left: 3px solid transparent;
+    transition:
+      background-color 0.3s,
+      border-color 0.3s;
+  }
+
+  .lk-row + .lk-row {
+    border-top: 1px solid var(--ss-line);
+  }
+
+  .lk-row[data-flagged] {
+    border-left-color: var(--ss-danger);
+    background: var(--ss-danger-soft);
+  }
+
+  .ss-stage[data-layout='compact'] .lk-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'main action' 'status status' 'cpu memory';
+    gap: 3px 12px;
+    padding: 6px 10px 7px 9px;
+
+    & .lk-row__main {
+      grid-area: main;
+    }
+
+    & .lk-row__status {
+      grid-area: status;
+    }
+
+    & .lk-stat--cpu {
+      grid-area: cpu;
+    }
+
+    & .lk-stat--memory {
+      grid-area: memory;
+    }
+
+    & .lk-row__action {
+      grid-area: action;
+    }
+  }
+
+  .lk-row__main {
+    display: grid;
+    min-width: 0;
+  }
+
+  .lk-row__name {
+    overflow: hidden;
+    color: var(--ss-accent-text);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lk-row__image {
+    overflow: hidden;
+    color: var(--ss-text);
+    font-family: var(--ss-mono);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lk-row__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px 6px;
+    min-width: 0;
+    font-size: 11px;
+  }
+
+  .lk-badge {
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--lk-surface-muted);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .lk-badge--running,
+  .lk-badge--healthy {
+    background: var(--ss-success-soft);
+    color: var(--ss-success-text);
+  }
+
+  .lk-badge--restarting,
+  .lk-badge--unhealthy {
+    background: var(--ss-danger-soft);
+    color: var(--ss-danger-text);
+  }
+
+  .lk-badge--starting {
+    background: var(--ss-warning-soft);
+    color: var(--ss-warning-text);
+  }
+
+  .lk-flag {
+    color: var(--ss-danger-text);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* CPU and memory, as text over the dashboard's own Sparkline */
+  .lk-stat {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+    color: var(--ss-text);
+    font-size: 10.5px;
+  }
+
+  .lk-stat__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sparkline {
+    display: block;
+    width: 100%;
+    height: 18px;
+    overflow: visible;
+  }
+
+  .sparkline__line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .sparkline__line--primary {
+    stroke: var(--lk-meter);
+  }
+
+  .sparkline__line--secondary {
+    stroke: var(--lk-series-2);
+  }
+
+  .lk-row[data-flagged] .sparkline__line--primary {
+    stroke: var(--ss-danger);
+  }
+
+  /* Container Actions (FR-23 to FR-27) */
+  .lk-row__action {
+    display: flex;
+    justify-content: flex-end;
+    min-width: 0;
+    font-size: 11px;
+  }
+
+  .lk-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: var(--ss-radius-sm);
+    background: var(--ss-accent);
+    color: var(--lk-on-accent);
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color 0.15s,
+      transform 0.15s;
+  }
+
+  .lk-button--small {
+    min-height: 26px;
+    padding: 0 10px;
+  }
+
+  .lk-button--quiet {
+    border-color: var(--ss-line);
+    background: var(--ss-surface);
+    color: var(--ss-text-strong);
+  }
+
+  .lk-button--quiet[data-hover] {
+    background: var(--lk-surface-muted);
+  }
+
+  .lk-button--danger {
+    background: var(--ss-danger);
+    color: var(--lk-on-critical);
+  }
+
+  .lk-button[data-pressed] {
+    transform: scale(0.96);
+  }
+
+  .lk-progress,
+  .lk-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ss-text);
+    white-space: nowrap;
+  }
+
+  .lk-done {
+    color: var(--ss-success-text);
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+
+  .lk-done[data-show] {
+    opacity: 1;
+  }
+
+  .lk-spinner {
+    width: 10px;
+    height: 10px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: lk-spin 0.8s linear infinite;
+  }
+
+  /* The Restart confirmation (FR-24), over a dimmed page */
+  .lk-backdrop {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--lk-backdrop);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.2s,
+      visibility 0.2s;
+  }
+
+  .lk-backdrop[data-open] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .lk-dialog {
+    display: grid;
+    gap: 12px;
+    width: 320px;
+    max-width: calc(100% - 24px);
+    padding: 18px;
+    border: 1px solid var(--ss-line);
+    border-radius: var(--ss-radius-lg);
+    background: var(--ss-surface);
+    color: var(--ss-text-strong);
+    transform: translateY(6px) scale(0.98);
+    transition: transform 0.2s;
+  }
+
+  .lk-backdrop[data-open] .lk-dialog {
+    transform: none;
+  }
+
+  .lk-dialog__title {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .lk-dialog__text {
+    color: var(--ss-text);
+  }
+
+  .lk-dialog__buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* Where the cursor rests between loops: the page's quiet lower right */
+  .lk-rest {
+    position: absolute;
+    right: 64px;
+    bottom: 44px;
+    width: 1px;
+    height: 1px;
+  }
+}
+
+@keyframes lk-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-hero .lk-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* Stops and restarts the demo (WCAG 2.2.2), under it, in the page's own style. */
+.lk-demo {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.lk-demo > [role='img'] {
+  justify-self: stretch;
+}
+
+.lk-demo__toggle {
+  min-block-size: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lk-demo__toggle:hover {
+  background: var(--tint);
+}

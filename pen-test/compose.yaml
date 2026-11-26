@@ -1,0 +1,72 @@
+# The pen-test deployment (E1, docs/pen-test/deployment.md). Never point this at a real
+# Docker or a real Host. Started by `pnpm pen-test:up`, which builds the Images first and
+# then runs Lookout *inside* the throwaway daemon below with the shipped compose.yaml (and
+# compose.socket-proxy.yaml), so `network_mode: host` and the socket mount mean the dind
+# container's namespace and daemon, never the Tester's machine's.
+#
+# Its own Compose project, so it can never be confused with a real Lookout.
+name: lookout-pen-test
+
+services:
+  # The throwaway Docker daemon: the round's Host. Privileged, as dind must be, but on a
+  # network with no way out and with nothing of the Tester's machine mounted into it.
+  dind:
+    image: docker:29-dind@sha256:fbbc96e0af32cdc190aff92ba97a1281a115351a723afe21af78879cc55126b0
+    privileged: true
+    hostname: pen-test-host
+    # Only the Unix socket: no TCP listener that could clash with the socket proxy's port.
+    command: ['dockerd', '--host=unix:///var/run/docker.sock']
+    environment:
+      DOCKER_TLS_CERTDIR: ''
+    healthcheck:
+      test: ['CMD', 'docker', 'info']
+      interval: 2s
+      timeout: 5s
+      retries: 60
+    volumes:
+      - dind-data:/var/lib/docker
+      # The shipped Compose files, the fixture Host root and the deployment's secrets are
+      # copied in here by `pnpm pen-test:up`; this volume goes with `pnpm pen-test:down`.
+      - deployment:/pen-test
+    networks:
+      inner:
+        ipv4_address: ${PEN_TEST_HOST_IP:-172.30.213.2}
+
+  # The only thing with a published port: it relays 127.0.0.1:PEN_TEST_PORT to Lookout in
+  # the dind container. A published port needs a network that is not internal, so the relay
+  # sits on one, and drops every new outbound connection itself before it starts relaying
+  # as an unprivileged user (pen-test/relay/entrypoint.sh).
+  relay:
+    build: ./relay
+    image: lookout-pen-test-relay:local
+    pull_policy: never
+    depends_on:
+      dind:
+        condition: service_healthy
+    cap_drop: [ALL]
+    # Only to install its own firewall at start; dropped with the switch to nobody.
+    cap_add: [NET_ADMIN, NET_RAW, SETUID, SETGID]
+    read_only: true
+    environment:
+      TARGET: ${PEN_TEST_HOST_IP:-172.30.213.2}:7777
+      INNER_SUBNET: ${PEN_TEST_SUBNET:-172.30.213.0/24}
+    ports:
+      - 127.0.0.1:${PEN_TEST_PORT:-7780}:7780
+    networks:
+      edge: {}
+      inner:
+        ipv4_address: ${PEN_TEST_RELAY_IP:-172.30.213.3}
+
+networks:
+  # No gateway: nothing on it can reach anything but its own members.
+  inner:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${PEN_TEST_SUBNET:-172.30.213.0/24}
+  # Only for the relay's published port; the relay's firewall refuses to use it outbound.
+  edge: {}
+
+volumes:
+  dind-data: {}
+  deployment: {}

@@ -1,0 +1,20 @@
+{
+  // Type-checks the hero demo and the vendored Stageshow kit it is built on
+  // (../stageshow/kit), which Vite bundles: modules resolve as a bundler
+  // resolves them, and JSX is React's. The kit is written to plain `strict`
+  // and is kept exactly as published, so the repository's stricter checks
+  // are off here; ESLint still holds the demo's own code to the rest. Only the kit
+  // modules the demo imports are checked (and bundled): the rest, such as the
+  // lucide-react icons, are not used.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["."]
+}

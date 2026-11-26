@@ -1,0 +1,15 @@
+# Applied last, on top of the shipped compose.yaml (and compose.socket-proxy.yaml), inside
+# the pen-test deployment's throwaway daemon. It changes only what the round needs:
+#
+# - Lookout runs the Image built from the round's commit, which the daemon cannot pull;
+# - the Host root is the fixture Host root, never the daemon's own `/` (Compose merges
+#   volumes by their target, so this replaces `/:/host` and keeps the socket mount).
+#
+# Everything else (network_mode: host, the socket, lookout.self, the proxy, its pinned Image
+# and allowlist, group_add) is exactly as shipped.
+services:
+  lookout:
+    image: lookout:pen-test
+    pull_policy: never
+    volumes:
+      - /pen-test/host-root:/host:ro

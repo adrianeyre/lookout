@@ -1,0 +1,1497 @@
+<!doctype html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- GitHub Pages sends no headers, so the policy is a meta tag (#128). site:dev drops it. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="%THEME_LIGHT%" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="%THEME_DARK%" media="(prefers-color-scheme: dark)" />
+    <title>%TITLE%</title>
+    <link
+      rel="preload"
+      href="/fonts/inter-latin-wght.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    %SEO_HEAD%
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- Icons, drawn after Lucide (ISC) and GitHub's Octicons mark (MIT). -->
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-telescope" viewBox="0 0 64 64">
+        <path
+          d="M50.5 7.5l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z"
+          fill="#fbbf24"
+        />
+        <path
+          d="M30 38L20 55M30 38l10 17M30 38v17"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3.2"
+          stroke-linecap="round"
+          opacity="0.8"
+        />
+        <g transform="rotate(-30 30 33)" fill="currentColor">
+          <rect x="9" y="29.5" width="6" height="7" rx="1.5" />
+          <rect x="14" y="27.5" width="26" height="11" rx="2.5" />
+          <rect x="39" y="25" width="9" height="16" rx="2.5" fill="#fbbf24" />
+        </g>
+        <circle cx="30" cy="38" r="3.4" fill="#fbbf24" />
+      </symbol>
+      <symbol id="i-github" viewBox="0 0 16 16">
+        <path
+          fill="currentColor"
+          d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"
+        />
+      </symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" fill="none" stroke="currentColor" />
+      </symbol>
+      <symbol id="i-container" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <path
+            d="M22 7.7c0-.6-.4-1.2-.8-1.5l-6.3-3.9a1.72 1.72 0 0 0-1.7 0l-10.3 6c-.5.2-.9.8-.9 1.4v6.6c0 .5.4 1.2.8 1.5l6.3 3.9a1.72 1.72 0 0 0 1.7 0l10.3-6c.5-.3.9-1 .9-1.5Z"
+          />
+          <path d="M10 21.9V14L2.1 9.1M10 14l11.9-6.9M14 19.8v-8.1M18 17.5V9.4" />
+        </g>
+      </symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+          <path d="M4 22v-7" />
+        </g>
+      </symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <path d="m4 17 6-6-6-6M12 19h8" />
+        </g>
+      </symbol>
+      <symbol id="i-shield-check" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <path
+            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+          />
+          <path d="m9 12 2 2 4-4" />
+        </g>
+      </symbol>
+      <symbol id="i-shield-alert" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <path
+            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+          />
+          <path d="M12 8v4M12 16h.01" />
+        </g>
+      </symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <rect width="14" height="20" x="5" y="2" rx="2" />
+          <path d="M12 18h.01" />
+        </g>
+      </symbol>
+      <symbol id="i-server" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <rect width="20" height="8" x="2" y="2" rx="2" />
+          <rect width="20" height="8" x="2" y="14" rx="2" />
+          <path d="M6 6h.01M6 18h.01" />
+        </g>
+      </symbol>
+      <symbol id="i-book" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <path
+            d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
+          />
+        </g>
+      </symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20" />
+        </g>
+      </symbol>
+      <symbol id="i-filter" viewBox="0 0 24 24">
+        <path d="M22 3H2l8 9.46V19l4 2v-8.54z" fill="none" stroke="currentColor" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" />
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor">
+          <rect width="14" height="14" x="8" y="8" rx="2" />
+          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+        </g>
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24">
+        <path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14m-7-7 7 7-7 7" fill="none" stroke="currentColor" />
+      </symbol>
+    </svg>
+
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="masthead">
+      <div class="wrap masthead__inner">
+        <a class="brand" href="#top">
+          <svg class="brand__mark" aria-hidden="true" focusable="false">
+            <use href="#i-telescope" />
+          </svg>
+          <span class="brand__name">Lookout</span>
+          <span class="visually-hidden">, back to the top</span>
+        </a>
+        <nav class="masthead__nav" aria-label="Main">
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#screenshots">Screenshots</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#quick-start">Quick start</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </nav>
+        <a class="button button--small button--ghost masthead__repo" href="%REPO_URL%">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-github" /></svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- 1. Hero -->
+      <section class="hero night" id="top" aria-labelledby="hero-title">
+        <div class="wrap hero__inner">
+          <div class="hero__copy">
+            <p class="eyebrow">
+              <svg class="icon" aria-hidden="true" focusable="false">
+                <use href="#i-telescope" />
+              </svg>
+              Free, open source and self-hosted
+            </p>
+            <h1 id="hero-title">
+              See your server’s health and its containers <span class="glint">at a glance</span>
+            </h1>
+            <p class="lede">
+              Lookout is one small dashboard for one Linux server: live CPU, memory, disks and
+              network, every Docker container grouped by Compose project, live logs, uptime and TLS
+              checks for the websites it serves, and safe start, stop and restart. Open it from your
+              phone over your VPN and know in a second whether everything is fine.
+            </p>
+            <div class="actions">
+              <a class="button button--primary" href="#quick-start">
+                Get started
+                <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow" /></svg>
+              </a>
+              <a class="button button--ghost" href="%REPO_URL%">
+                <svg class="icon" aria-hidden="true" focusable="false">
+                  <use href="#i-github" />
+                </svg>
+                View on GitHub
+              </a>
+            </div>
+            <ul class="facts" aria-label="At a glance">
+              <li>One container</li>
+              <li>No database</li>
+              <li>No telemetry</li>
+              <li>amd64 and arm64</li>
+            </ul>
+          </div>
+          <!-- The hero demo (WEB-5, site/demos/) replaces this screenshot when JavaScript runs. -->
+          <figure class="hero__shot" data-demo="hero">
+            <div class="frame" aria-hidden="true"><span></span><span></span><span></span></div>
+            <img
+              data-shot="host-desktop"
+              data-theme="dark"
+              sizes="(min-width: 64rem) 600px, 100vw"
+              fetchpriority="high"
+              alt="The Lookout Host page: CPU at 21%, memory at 61%, three disks with one amber at 88%, disk I/O and network with live sparklines, and a header summary of 6 running and 3 Flagged containers."
+            />
+          </figure>
+        </div>
+      </section>
+
+      <!-- 2. What it does -->
+      <section class="section" id="what" aria-labelledby="what-title">
+        <div class="wrap split">
+          <div>
+            <h2 id="what-title">One lightweight view of the Host and everything on it</h2>
+          </div>
+          <div class="prose">
+            <p>
+              Most home servers and small VPSs run a handful of Compose projects on a single
+              machine. Full monitoring stacks are built for fleets; <code>docker ps</code> and
+              <code>htop</code> over SSH don’t work from a phone. Lookout sits in between.
+            </p>
+            <p>
+              It reads the Host’s own <code>/proc</code>, <code>/sys</code> and filesystems through
+              a read-only mount, and talks to Docker through its socket. The page updates live as
+              things change, and it fits a 360-pixel-wide screen.
+            </p>
+          </div>
+        </div>
+        <div class="wrap">
+          <dl class="stats">
+            <div>
+              <dt>Containers to run</dt>
+              <dd>1</dd>
+            </div>
+            <div>
+              <dt>Databases or agents</dt>
+              <dd>0</dd>
+            </div>
+            <div>
+              <dt>Narrowest screen</dt>
+              <dd>360<small>px</small></dd>
+            </div>
+            <div>
+              <dt>Minutes to set up</dt>
+              <dd>~5</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- 3. Features -->
+      <section class="section section--tint" id="features" aria-labelledby="features-title">
+        <div class="wrap">
+          <h2 id="features-title">Everything you check over SSH, on one page</h2>
+          <ul class="features">
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-activity" />
+              </svg>
+              <h3>Live Host Metrics</h3>
+              <p>
+                CPU per core and load, memory and swap, every disk’s space, disk I/O and network
+                throughput, with sparklines of the last 15 minutes. Amber and red thresholds you
+                choose.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-container" />
+              </svg>
+              <h3>Containers by Compose project</h3>
+              <p>
+                Every container, running or stopped, grouped by its Compose project, with state,
+                health, uptime, ports and live CPU and memory. Filter by name, image or state.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-flag" />
+              </svg>
+              <h3>Flagged Containers</h3>
+              <p>
+                Anything restarting, unhealthy or exited with an error is flagged, in words and with
+                an icon, not colour alone, and counted in the header on every page.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-terminal" />
+              </svg>
+              <h3>Live logs</h3>
+              <p>
+                Tail stdout and stderr together, choose the last 100, 500 or 1,000 lines, follow new
+                lines, show timestamps, and search with highlighted matches.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-server" />
+              </svg>
+              <h3>Largest folders</h3>
+              <p>
+                The ten folders using the most disk space anywhere on the Host, each with a bar of
+                its share of its disk, so you find what filled it. Scanned gently every 6 hours, or
+                when you ask.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-globe" />
+              </svg>
+              <h3>Websites and TLS certificates</h3>
+              <p>
+                Every site the Host serves, found from Traefik or <code>lookout.url</code> labels,
+                checked every minute: up, slow or down, response time and certificate expiry, next
+                to the container behind it.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-shield-check" />
+              </svg>
+              <h3>Container Actions with guard-rails</h3>
+              <p>
+                Start, stop, restart, and remove stopped containers. Stop and restart ask first;
+                remove needs the name typed. No shell, no force-remove, volumes kept, and Lookout
+                never touches its own container.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-phone" />
+              </svg>
+              <h3>Light and dark, on any screen</h3>
+              <p>
+                Follows your system theme and works on a phone without sideways scrolling. Behind
+                one password, with sessions that expire.
+              </p>
+            </li>
+            <li class="feature">
+              <svg class="feature__icon" aria-hidden="true" focusable="false">
+                <use href="#i-filter" />
+              </svg>
+              <h3>Narrower Docker access, if you want it</h3>
+              <p>
+                An optional socket proxy lets through only the Docker API calls Lookout needs, so
+                even a compromised Lookout cannot exec into containers or pull images.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 4. Screenshots -->
+      <section class="section" id="screenshots" aria-labelledby="screenshots-title">
+        <div class="wrap">
+          <h2 id="screenshots-title">Screenshots of the real interface</h2>
+          <p class="section__intro">
+            Rendered from Lookout’s own components with fictional data, never captured from a real
+            Host. Select a screenshot to enlarge it.
+          </p>
+          <ul class="shots">
+            <li>
+              <a
+                class="shot"
+                href="/images/host-light-desktop.png"
+                data-dark="/images/host-dark-desktop.png"
+              >
+                <img
+                  data-shot="host-desktop"
+                  sizes="(min-width: 48rem) 560px, 100vw"
+                  loading="lazy"
+                  alt="Host page: overview, CPU, memory, disk space, disk I/O and network cards."
+                />
+                <span class="shot__caption">Host</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="shot"
+                href="/images/containers-light-desktop.png"
+                data-dark="/images/containers-dark-desktop.png"
+              >
+                <img
+                  data-shot="containers-desktop"
+                  sizes="(min-width: 48rem) 560px, 100vw"
+                  loading="lazy"
+                  alt="Containers page: containers grouped into the notes and photos Compose projects, with an unhealthy and a restarting container flagged."
+                />
+                <span class="shot__caption">Containers</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="shot"
+                href="/images/container-detail-light-desktop.png"
+                data-dark="/images/container-detail-dark-desktop.png"
+              >
+                <img
+                  data-shot="container-detail-desktop"
+                  sizes="(min-width: 48rem) 560px, 100vw"
+                  loading="lazy"
+                  alt="Container detail: Stop and Restart buttons, image and lifecycle details, and environment variables with their values hidden."
+                />
+                <span class="shot__caption">Container detail</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="shot"
+                href="/images/container-logs-light-desktop.png"
+                data-dark="/images/container-logs-dark-desktop.png"
+              >
+                <img
+                  data-shot="container-logs-desktop"
+                  sizes="(min-width: 48rem) 560px, 100vw"
+                  loading="lazy"
+                  alt="Live logs with timestamps, warnings shown differently, and six highlighted matches for a search."
+                />
+                <span class="shot__caption">Live logs and search</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="shot"
+                href="/images/websites-light-desktop.png"
+                data-dark="/images/websites-dark-desktop.png"
+              >
+                <img
+                  data-shot="websites-desktop"
+                  sizes="(min-width: 48rem) 560px, 100vw"
+                  loading="lazy"
+                  alt="Websites page: four Hosted Sites, with search.example.net down and flagged beside its unhealthy container, and a certificate for photos.example.net expiring in 11 days."
+                />
+                <span class="shot__caption">Websites and TLS</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="shot"
+                href="/images/settings-light-desktop.png"
+                data-dark="/images/settings-dark-desktop.png"
+              >
+                <img
+                  data-shot="settings-desktop"
+                  sizes="(min-width: 48rem) 560px, 100vw"
+                  loading="lazy"
+                  alt="Settings: System, Light and Dark modes, and six themes: Teal, Ocean, Violet, Rose, Forest and Slate."
+                />
+                <span class="shot__caption">Settings: modes and themes</span>
+              </a>
+            </li>
+            <li class="shots__phone">
+              <a
+                class="shot"
+                href="/images/host-light-phone.png"
+                data-dark="/images/host-dark-phone.png"
+              >
+                <img
+                  data-shot="host-phone"
+                  sizes="(min-width: 48rem) 260px, 50vw"
+                  loading="lazy"
+                  alt="The Host page on a phone."
+                />
+                <span class="shot__caption">Host, on a phone</span>
+              </a>
+            </li>
+            <li class="shots__phone">
+              <a
+                class="shot"
+                href="/images/containers-light-phone.png"
+                data-dark="/images/containers-dark-phone.png"
+              >
+                <img
+                  data-shot="containers-phone"
+                  sizes="(min-width: 48rem) 260px, 50vw"
+                  loading="lazy"
+                  alt="The Containers page on a phone."
+                />
+                <span class="shot__caption">Containers, on a phone</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 5. Security -->
+      <section class="section" id="security" aria-labelledby="security-title">
+        <div class="wrap">
+          <div class="warning">
+            <svg class="warning__icon" aria-hidden="true" focusable="false">
+              <use href="#i-shield-alert" />
+            </svg>
+            <div>
+              <h2 id="security-title">Security: keep Lookout private</h2>
+              <p class="warning__lead">
+                Lookout has <strong>root-equivalent access</strong> to your server. Anyone who can
+                reach it and sign in can control every container through the Docker socket. Only
+                ever reach it over your LAN or a VPN such as Tailscale or WireGuard.
+              </p>
+              <ul class="checklist">
+                <li>
+                  Set <code>LOOKOUT_BIND_ADDRESS</code> to your LAN or Tailscale address. It
+                  defaults to <code>127.0.0.1</code>.
+                </li>
+                <li>
+                  <strong>Never</strong> bind it to a public address, port-forward it, or put it
+                  behind a public reverse proxy or tunnel.
+                </li>
+                <li>
+                  Use a long, unique password. Lookout stores only an Argon2id hash, limits failed
+                  sign-ins and expires idle sessions.
+                </li>
+                <li>
+                  The Host’s filesystem is mounted read-only. Container Actions are limited to
+                  start, stop, restart and remove: there is no shell and no image pulls.
+                </li>
+                <li>
+                  For a smaller blast radius, add the optional
+                  <a href="#socket-proxy">filtering socket proxy</a>. Website checks only reach the
+                  sites you configured, and never turn TLS verification off.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Requirements -->
+      <section class="section section--tint" id="requirements" aria-labelledby="req-title">
+        <div class="wrap split">
+          <div>
+            <h2 id="req-title">Requirements</h2>
+          </div>
+          <ul class="reqs">
+            <li>
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-server" /></svg>
+              <span
+                ><strong>A Linux Host</strong> on amd64 or arm64, such as a Raspberry Pi 4 or
+                5</span
+              >
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" focusable="false">
+                <use href="#i-container" />
+              </svg>
+              <span><strong>Docker Engine 24 or later</strong>, with the Compose plugin</span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" focusable="false">
+                <use href="#i-shield-check" />
+              </svg>
+              <span><strong>A private network</strong> to reach it: your LAN or a VPN</span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check" /></svg>
+              <span
+                ><strong>Nothing else.</strong> No Node, no database; the Image is pre-built for
+                both architectures</span
+              >
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 7. Quick start -->
+      <section class="section" id="quick-start" aria-labelledby="quick-title">
+        <div class="wrap">
+          <h2 id="quick-title">Quick start: running in five minutes</h2>
+          <p class="section__intro">Run these on the Host, in order.</p>
+          <ol class="steps">
+            <li class="step">
+              <h3>Get the Compose file</h3>
+              <pre tabindex="0"><code>mkdir lookout &amp;&amp; cd lookout
+curl -fsSLO %RAW_URL%/compose.yaml</code></pre>
+            </li>
+            <li class="step">
+              <h3>Hash a password</h3>
+              <p>No Node needed: the Image hashes it for you.</p>
+              <pre
+                tabindex="0"
+              ><code>docker run --rm -it %IMAGE%:1.0 hash-password --env</code></pre>
+              <p>
+                Copy the printed <code>LOOKOUT_PASSWORD_HASH=…</code> line into a file called
+                <code>.env</code>. It is already written with <code>$$</code> for each
+                <code>$</code>, as Compose needs.
+              </p>
+            </li>
+            <li class="step">
+              <h3>Add a session secret and the Docker group</h3>
+              <pre
+                tabindex="0"
+              ><code>echo "LOOKOUT_SESSION_SECRET=$(openssl rand -base64 32)" &gt;&gt; .env
+echo "DOCKER_GID=$(stat -c %g /var/run/docker.sock)" &gt;&gt; .env</code></pre>
+            </li>
+            <li class="step">
+              <h3>Choose the private address to listen on</h3>
+              <pre
+                tabindex="0"
+              ><code>echo "LOOKOUT_BIND_ADDRESS=100.x.y.z" &gt;&gt; .env</code></pre>
+              <p>Your Tailscale or LAN address. Never a public one.</p>
+            </li>
+            <li class="step">
+              <h3>Start it</h3>
+              <pre tabindex="0"><code>docker compose up -d</code></pre>
+              <p>Then open <code>http://&lt;that address&gt;:7777</code> and sign in.</p>
+            </li>
+          </ol>
+          <p class="callout">
+            <strong>Updating:</strong>
+            <code>docker compose pull &amp;&amp; docker compose up -d</code>. The Compose file pins
+            <code>%IMAGE%:1.0</code>, so you get fixes for 1.0 automatically and move to a new minor
+            version when you choose.
+          </p>
+        </div>
+      </section>
+
+      <!-- 8. Full setup guide -->
+      <section class="section section--tint" id="setup" aria-labelledby="setup-title">
+        <div class="wrap">
+          <h2 id="setup-title">Full setup guide</h2>
+
+          <h3>Settings</h3>
+          <p>
+            Every setting is an environment variable, set in <code>.env</code> next to
+            <code>compose.yaml</code>. Lookout checks them all at startup and refuses to start,
+            naming each problem, if any is invalid.
+          </p>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="Settings">
+            <table class="settings">
+              <thead>
+                <tr>
+                  <th scope="col">Variable</th>
+                  <th scope="col">Default</th>
+                  <th scope="col">What it does</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_PASSWORD_HASH</code></th>
+                  <td>Required</td>
+                  <td>
+                    Argon2id hash of the sign-in password, from <code>hash-password</code>. Write
+                    each <code>$</code> as <code>$$</code> in Compose files.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SESSION_SECRET</code></th>
+                  <td>Required</td>
+                  <td>Signs session cookies. At least 32 random bytes.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_BIND_ADDRESS</code></th>
+                  <td><code>127.0.0.1</code></td>
+                  <td>The address to listen on: your LAN or Tailscale address.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_PORT</code></th>
+                  <td><code>7777</code></td>
+                  <td>The port to listen on.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_HOST_ROOT</code></th>
+                  <td><code>/host</code></td>
+                  <td>Where the Host’s root filesystem is mounted inside the container.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SAMPLE_INTERVAL_MS</code></th>
+                  <td><code>2000</code></td>
+                  <td>How often Host Metrics are sampled, 250 to 60,000 ms.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_LIVE_WINDOW_MINUTES</code></th>
+                  <td><code>15</code></td>
+                  <td>How much history the sparklines keep in memory, 1 to 60 minutes.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_WARN_PERCENT</code></th>
+                  <td><code>80</code></td>
+                  <td>Amber threshold for CPU, memory, swap and disk.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_CRITICAL_PERCENT</code></th>
+                  <td><code>90</code></td>
+                  <td>Red threshold. Must be higher than the warning threshold.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SESSION_IDLE_DAYS</code></th>
+                  <td><code>7</code></td>
+                  <td>Days without use before a session expires, 1 to 365.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SESSION_MAX_DAYS</code></th>
+                  <td><code>30</code></td>
+                  <td>
+                    Days after signing in before a session ends however often it is used, 1 to 365.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_HOSTNAMES</code></th>
+                  <td>—</td>
+                  <td>
+                    Host names Lookout answers to, comma-separated. IP addresses and
+                    <code>localhost</code> always work; any other name is refused.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SECURE_COOKIE</code></th>
+                  <td><code>false</code></td>
+                  <td>
+                    <code>true</code> always marks the session cookie Secure, behind an HTTPS proxy
+                    that does not say so itself.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>DOCKER_GID</code></th>
+                  <td>—</td>
+                  <td>
+                    Compose only: the group of <code>/var/run/docker.sock</code>, so the non-root
+                    container can reach Docker.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_FOLDER_SCAN_HOURS</code></th>
+                  <td><code>6</code></td>
+                  <td>
+                    How often the Host’s largest folders are scanned, 0 to 168 hours. 0 scans only
+                    when you press Scan now.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>DOCKER_HOST</code></th>
+                  <td>The socket</td>
+                  <td>
+                    Optional: another Engine address, <code>unix:///path</code> or
+                    <code>tcp://host:2375</code>. TLS is not supported.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOG_LEVEL</code></th>
+                  <td><code>info</code></td>
+                  <td>
+                    Server log detail: <code>error</code>, <code>warn</code>, <code>info</code> or
+                    <code>debug</code>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Website settings</h3>
+          <p>
+            Optional. Sites with Traefik router labels or a <code>lookout.url</code> label are found
+            on their own; these add others and tune the checks.
+          </p>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="Website settings">
+            <table class="settings">
+              <thead>
+                <tr>
+                  <th scope="col">Variable</th>
+                  <th scope="col">Default</th>
+                  <th scope="col">What it does</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SITES</code></th>
+                  <td>None</td>
+                  <td>
+                    Extra sites to check, as comma-separated <code>http</code> or
+                    <code>https</code> URLs. Lookout refuses to start with an invalid one.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SITE_CHECK_INTERVAL_SECONDS</code></th>
+                  <td><code>60</code></td>
+                  <td>How often every site is checked, 1 to 3,600 seconds.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SITE_TIMEOUT_MS</code></th>
+                  <td><code>10000</code></td>
+                  <td>A check with no response after this long is down.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_SITE_SLOW_MS</code></th>
+                  <td><code>2000</code></td>
+                  <td>A response slower than this is slow.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_TLS_WARN_DAYS</code></th>
+                  <td><code>14</code></td>
+                  <td>Amber when a certificate expires within this many days.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_TLS_CRITICAL_DAYS</code></th>
+                  <td><code>7</code></td>
+                  <td>Red within this many days. Must be lower than the warning days.</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>LOOKOUT_DOCKER_PROXY_PORT</code></th>
+                  <td><code>2375</code></td>
+                  <td>Socket proxy only: the loopback port the proxy listens on.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="guide">
+            <div class="card">
+              <h3>Binding to a LAN or Tailscale address</h3>
+              <p>
+                The Compose file uses host networking, so Lookout listens directly on the address
+                you choose. Find your Tailscale address with
+                <code>tailscale ip -4</code>, or your LAN address with <code>ip -4 addr</code>, and
+                set <code>LOOKOUT_BIND_ADDRESS</code> to it. Leaving the default,
+                <code>127.0.0.1</code>, only allows connections from the Host itself, for example
+                through an SSH tunnel.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Websites</h3>
+              <p>
+                Lookout finds each site from a Traefik router’s <code>Host(...)</code> rule, from a
+                <code>lookout.url</code> label on any container, or from <code>LOOKOUT_SITES</code>.
+                Checks connect to the Host itself with the site’s hostname, so they need no hairpin
+                NAT or split DNS; label a container <code>lookout.check: public</code> to check
+                through its public URL instead.
+              </p>
+            </div>
+            <div class="card" id="socket-proxy">
+              <h3>Narrowing Docker access</h3>
+              <p>
+                Add the filtering socket proxy, which allows only the Docker API calls Lookout uses.
+                It needs Docker Compose 2.24 or later.
+              </p>
+              <pre tabindex="0"><code>curl -fsSLO %RAW_URL%/compose.socket-proxy.yaml
+docker compose -f compose.yaml -f compose.socket-proxy.yaml up -d</code></pre>
+            </div>
+            <div class="card">
+              <h3>Updating</h3>
+              <p>
+                Run <code>docker compose pull &amp;&amp; docker compose up -d</code>. To move to a
+                new minor version, change the tag in <code>compose.yaml</code> first. Every release
+                is listed on GitHub with its changes, and you can roll back by pinning the previous
+                version.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Troubleshooting</h3>
+              <ul>
+                <li>
+                  <strong>The metrics describe the container, not the Host:</strong> the Host root
+                  mount <code>/:/host:ro,rslave</code> is missing.
+                </li>
+                <li>
+                  <strong>“Docker unavailable”:</strong> the socket mount is missing, or
+                  <code>DOCKER_GID</code> does not match the socket’s group.
+                </li>
+                <li>
+                  <strong>It will not start:</strong> run <code>docker compose logs lookout</code>;
+                  every invalid setting is named.
+                </li>
+                <li>
+                  <strong>A site is down in Lookout but works in a browser:</strong> nothing on the
+                  Host listens on that URL’s port; label its container
+                  <code>lookout.check: public</code>.
+                </li>
+                <li>
+                  <strong>A Traefik site is missing:</strong> its rule has no
+                  <code>Host(...)</code>, or the container has <code>traefik.enable=false</code>.
+                </li>
+                <li>
+                  <strong>The password is refused:</strong> check each <code>$</code> in the hash is
+                  written as <code>$$</code>.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. FAQ -->
+      <section class="section" id="faq" aria-labelledby="faq-title">
+        <div class="wrap split">
+          <div>
+            <h2 id="faq-title">Frequently asked questions</h2>
+          </div>
+          <div class="faqs">%FAQ%</div>
+        </div>
+      </section>
+
+      <!-- 10. Documentation -->
+      <section class="section section--tint" id="docs" aria-labelledby="docs-title">
+        <div class="wrap">
+          <h2 id="docs-title">Documentation</h2>
+          <ul class="links">
+            <li>
+              <a href="%BLOB_URL%/README.md">
+                <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book" /></svg>
+                <strong>README</strong>
+                <span>Quick start, configuration, security, updating and development</span>
+              </a>
+            </li>
+            <li>
+              <a href="%BLOB_URL%/docs/product-requirements-document/lookout.md">
+                <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book" /></svg>
+                <strong>Product requirements</strong>
+                <span>What Lookout does and does not do, and why</span>
+              </a>
+            </li>
+            <li>
+              <a href="%ADR_URL%">
+                <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book" /></svg>
+                <strong>Architectural decisions</strong>
+                <span>The design choices, one record each</span>
+              </a>
+            </li>
+            <li>
+              <a href="%BLOB_URL%/GLOSSARY.md">
+                <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-book" /></svg>
+                <strong>Glossary</strong>
+                <span>Host, Container, Compose Project, Flagged Container and more</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 11. Licence -->
+      <section class="section" id="licence" aria-labelledby="licence-title">
+        <div class="wrap split">
+          <div>
+            <h2 id="licence-title">Licence: MIT, free for everyone</h2>
+          </div>
+          <p>
+            Lookout is free and open source under the
+            <a href="%BLOB_URL%/LICENSE">MIT licence</a>. Third-party components and their licences
+            are listed in <a href="%BLOB_URL%/THIRD-PARTY-NOTICES.md">THIRD-PARTY-NOTICES.md</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- 12. Get Lookout -->
+      <section class="section get night" id="get" aria-labelledby="get-title">
+        <div class="wrap get__inner">
+          <svg class="get__mark" aria-hidden="true" focusable="false">
+            <use href="#i-telescope" />
+          </svg>
+          <h2 id="get-title">Get Lookout</h2>
+          <p>Pre-built for amd64 and arm64. Pull it, point it at your VPN, done.</p>
+          <pre class="get__image" tabindex="0"><code>docker pull %IMAGE%:1.0</code></pre>
+          <div class="actions">
+            <a class="button button--primary" href="%REPO_URL%">
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-github" /></svg>
+              Source on GitHub
+            </a>
+            <a class="button button--ghost" href="https://%IMAGE%">Image on GHCR</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13. Site map: on this page and the project -->
+      <section class="sitemap" aria-labelledby="sitemap-title">
+        <h2 id="sitemap-title" class="visually-hidden">Site map</h2>
+        <div class="wrap sitemap__inner">
+          <div class="sitemap__brand">
+            <svg class="brand__mark" aria-hidden="true" focusable="false">
+              <use href="#i-telescope" />
+            </svg>
+            <p>
+              <strong>Lookout</strong><br />
+              Your server’s health and its containers at a glance.
+            </p>
+          </div>
+          <nav aria-labelledby="sitemap-page">
+            <h3 id="sitemap-page">On this page</h3>
+            <ul>
+              <li><a href="#what">What it does</a></li>
+              <li><a href="#features">Features</a></li>
+              <li><a href="#screenshots">Screenshots</a></li>
+              <li><a href="#security">Security</a></li>
+              <li><a href="#requirements">Requirements</a></li>
+              <li><a href="#quick-start">Quick start</a></li>
+              <li><a href="#setup">Full setup guide</a></li>
+              <li><a href="#faq">FAQ</a></li>
+            </ul>
+          </nav>
+          <nav aria-labelledby="sitemap-project">
+            <h3 id="sitemap-project">Project</h3>
+            <ul>
+              <li><a href="%REPO_URL%">Source code</a></li>
+              <li><a href="%RELEASES_URL%">Releases</a></li>
+              <li><a href="%ISSUES_URL%">Issues</a></li>
+              <li><a href="https://%IMAGE%">Image on GHCR</a></li>
+              <li><a href="%BLOB_URL%/LICENSE">MIT licence</a></li>
+            </ul>
+          </nav>
+        </div>
+      </section>
+    </main>
+
+    <!-- 14. Footer: every item but the first opens its information in a modal. -->
+    <footer class="footer">
+      <nav aria-label="About Lookout">
+        <ul class="footer__list">
+          <li>
+            <a class="footer__link" href="%REPO_URL%" target="_blank" rel="noopener noreferrer">
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-github" /></svg>
+              Website design<span class="visually-hidden"
+                >, source on GitHub, opens in a new tab</span
+              >
+            </a>
+          </li>
+          <li>
+            <button
+              class="footer__link"
+              type="button"
+              commandfor="changelog"
+              command="show-modal"
+              aria-haspopup="dialog"
+            >
+              %VERSION_LABEL%
+            </button>
+          </li>
+          <li>
+            <button
+              class="footer__link"
+              type="button"
+              commandfor="credits"
+              command="show-modal"
+              aria-haspopup="dialog"
+            >
+              Credits
+            </button>
+          </li>
+          <li>
+            <button
+              class="footer__link"
+              type="button"
+              commandfor="privacy"
+              command="show-modal"
+              aria-haspopup="dialog"
+            >
+              Privacy policy
+            </button>
+          </li>
+          <li>
+            <button
+              class="footer__link"
+              type="button"
+              commandfor="terms"
+              command="show-modal"
+              aria-haspopup="dialog"
+            >
+              Terms and conditions
+            </button>
+          </li>
+          <li>
+            <button
+              class="footer__link"
+              type="button"
+              commandfor="cookies"
+              command="show-modal"
+              aria-haspopup="dialog"
+            >
+              Cookie policy
+            </button>
+          </li>
+          <li>
+            <button
+              class="footer__link"
+              type="button"
+              commandfor="accessibility"
+              command="show-modal"
+              aria-haspopup="dialog"
+            >
+              Accessibility
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+
+    <!-- The footer's modals. Esc, either Close button or a click outside closes them. -->
+    <dialog class="modal" id="changelog" aria-labelledby="changelog-title" closedby="any">
+      <div class="modal__header">
+        <h2 id="changelog-title">Changelog</h2>
+        <button class="icon-button" type="button" commandfor="changelog" command="close">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close" /></svg>
+          <span class="visually-hidden">Close changelog</span>
+        </button>
+      </div>
+      <div class="modal__body prose" role="region" aria-labelledby="changelog-title" tabindex="0">
+        %CHANGELOG%
+      </div>
+      <div class="modal__footer">
+        <button class="button button--primary" type="button" commandfor="changelog" command="close">
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <dialog class="modal" id="credits" aria-labelledby="credits-title" closedby="any">
+      <div class="modal__header">
+        <h2 id="credits-title">Credits</h2>
+        <button class="icon-button" type="button" commandfor="credits" command="close">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close" /></svg>
+          <span class="visually-hidden">Close credits</span>
+        </button>
+      </div>
+      <div class="modal__body prose" role="region" aria-labelledby="credits-title" tabindex="0">
+        <section class="creator" aria-labelledby="credits-creator">
+          <span class="creator__logo" aria-hidden="true"
+            ><svg focusable="false"><use href="#i-telescope" /></svg
+          ></span>
+          <div>
+            <h3 id="credits-creator">Adrian Eyre</h3>
+            <p>Created, designed and built Lookout and this website.</p>
+            <p class="muted">
+              %VERSION% ·
+              <a href="https://github.com/adrianeyre" target="_blank" rel="noopener noreferrer"
+                >On GitHub<span class="visually-hidden">, opens in a new tab</span></a
+              >
+            </p>
+          </div>
+        </section>
+        <p>
+          Lookout is built on open-source software. Thank you to everyone who makes it. The full
+          list is in <a href="%BLOB_URL%/THIRD-PARTY-NOTICES.md">THIRD-PARTY-NOTICES.md</a>.
+        </p>
+        <h3>This website</h3>
+        <ul class="credits">
+          <li>
+            <span><a href="https://vite.dev">Vite</a> Builds the site</span><span>MIT</span>
+          </li>
+          <li>
+            <span
+              ><a href="https://www.typescriptlang.org">TypeScript</a> The language it is written
+              in</span
+            ><span>Apache-2.0</span>
+          </li>
+          <li>
+            <span
+              ><a href="https://sharp.pixelplumbing.com">sharp</a> Renders the icons and the AVIF
+              and WebP screenshots</span
+            ><span>Apache-2.0</span>
+          </li>
+          <li>
+            <span><a href="https://react.dev">React</a> Runs the hero demo</span><span>MIT</span>
+          </li>
+          <li>
+            <span
+              ><a href="https://github.com/benjitaylor/skills/tree/main/stageshow">Stageshow</a> The
+              kit the hero demo is built on, by Benji Taylor</span
+            ><span>MIT</span>
+          </li>
+          <li>
+            <span
+              ><a href="https://lucide.dev">Lucide</a> The icons the site’s own are drawn
+              after</span
+            ><span>ISC</span>
+          </li>
+          <li>
+            <span><a href="https://primer.style/octicons/">Octicons</a> The GitHub mark</span
+            ><span>MIT</span>
+          </li>
+          <li>
+            <span><a href="https://pages.github.com">GitHub Pages</a> Hosts the site</span
+            ><span>Service</span>
+          </li>
+        </ul>
+        <h3>Typography</h3>
+        <ul class="credits">
+          <li>
+            <span><a href="https://rsms.me/inter/">Inter</a> Headings and body text</span
+            ><span>OFL-1.1</span>
+          </li>
+          <li>
+            <span><a href="https://www.jetbrains.com/lp/mono/">JetBrains Mono</a> Code</span
+            ><span>OFL-1.1</span>
+          </li>
+        </ul>
+        <h3>Build and test</h3>
+        <ul class="credits">
+          <li>
+            <span
+              ><a href="https://playwright.dev">Playwright</a> Browser checks, and renders the
+              social card</span
+            ><span>Apache-2.0</span>
+          </li>
+          <li>
+            <span
+              ><a href="https://github.com/dequelabs/axe-core">axe-core</a> Automated accessibility
+              checks</span
+            ><span>MPL-2.0</span>
+          </li>
+          <li>
+            <span><a href="https://vitest.dev">Vitest</a> Unit tests</span><span>MIT</span>
+          </li>
+        </ul>
+      </div>
+      <div class="modal__footer">
+        <button class="button button--primary" type="button" commandfor="credits" command="close">
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <dialog class="modal" id="privacy" aria-labelledby="privacy-title" closedby="any">
+      <div class="modal__header">
+        <h2 id="privacy-title">Privacy policy</h2>
+        <button class="icon-button" type="button" commandfor="privacy" command="close">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close" /></svg>
+          <span class="visually-hidden">Close privacy policy</span>
+        </button>
+      </div>
+      <div class="modal__body prose" role="region" aria-labelledby="privacy-title" tabindex="0">
+        <p class="policy-updated">Last updated: November 2026</p>
+
+        <h3>Who looks after it</h3>
+        <p>
+          This website is Lookout’s project page, written and published by Adrian Eyre from the
+          <a href="%REPO_URL%">Lookout repository</a> on GitHub. It is hosted on GitHub Pages.
+        </p>
+
+        <h3>What this website collects</h3>
+        <p>
+          Nothing. It has no analytics, no tracking and no advertising, sets no cookies, and uses no
+          local storage, session storage or other browser storage. It makes no requests to any other
+          site: its fonts, icons, images and scripts are all served from this site, and the
+          screenshots show a made-up server, never a real one.
+        </p>
+
+        <h3>Who else sees it</h3>
+        <ul>
+          <li>
+            <strong>GitHub Pages</strong> — serves every request for this site, and may log your IP
+            address and browser to operate and secure the service, as set out in the
+            <a
+              href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement"
+              >GitHub General Privacy Statement</a
+            >.
+          </li>
+          <li>
+            <strong>Sites you choose to visit</strong> — links to GitHub and the GitHub Container
+            Registry are ordinary links: nothing is sent to them unless you follow one.
+          </li>
+        </ul>
+
+        <h3>Lookout itself</h3>
+        <p>
+          The Lookout dashboard runs on your own server and sends nothing to its author: no
+          telemetry, no analytics and no update checks. It contacts only your own Docker and the
+          websites you ask it to check. Its own Privacy policy, in its footer, says exactly what it
+          keeps.
+        </p>
+
+        <h3>Your rights</h3>
+        <p>
+          This website holds nothing about you. For what GitHub keeps, see its privacy statement;
+          for anything else, please <a href="%ISSUES_URL%">open an issue</a>.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <button class="button button--primary" type="button" commandfor="privacy" command="close">
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <dialog class="modal" id="terms" aria-labelledby="terms-title" closedby="any">
+      <div class="modal__header">
+        <h2 id="terms-title">Terms and conditions</h2>
+        <button class="icon-button" type="button" commandfor="terms" command="close">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close" /></svg>
+          <span class="visually-hidden">Close terms and conditions</span>
+        </button>
+      </div>
+      <div class="modal__body prose" role="region" aria-labelledby="terms-title" tabindex="0">
+        <p class="policy-updated">Last updated: November 2026</p>
+
+        <h3>Using this website</h3>
+        <p>
+          You may read, link to and share this website freely. Its text and screenshots describe
+          Lookout as it is built from the <a href="%REPO_URL%">repository</a>; where they differ,
+          the repository is right.
+        </p>
+
+        <h3>Using Lookout</h3>
+        <p>
+          Lookout is free and open source under the <a href="%BLOB_URL%/LICENSE">MIT licence</a>.
+          You may use, copy, change and share it under that licence.
+        </p>
+
+        <h3>Keeping it private</h3>
+        <p>
+          Lookout has root-equivalent access to the server it runs on, through Docker. You are
+          responsible for how you deploy it: keep it on your LAN or a VPN, never the public
+          internet, port-forwarded or behind a public proxy, and use a long, unique password.
+        </p>
+
+        <h3>No warranty</h3>
+        <p>
+          Lookout and this website are provided as they are, without warranty of any kind. Their
+          author is not liable for any loss arising from their use, to the extent the law allows.
+        </p>
+
+        <h3>Changes</h3>
+        <p>
+          These terms may change with new versions of Lookout or this website; the date above says
+          when they last did.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <button class="button button--primary" type="button" commandfor="terms" command="close">
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <dialog class="modal" id="cookies" aria-labelledby="cookies-title" closedby="any">
+      <div class="modal__header">
+        <h2 id="cookies-title">Cookie policy</h2>
+        <button class="icon-button" type="button" commandfor="cookies" command="close">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close" /></svg>
+          <span class="visually-hidden">Close cookie policy</span>
+        </button>
+      </div>
+      <div class="modal__body prose" role="region" aria-labelledby="cookies-title" tabindex="0">
+        <p class="policy-updated">Last updated: November 2026</p>
+
+        <h3>None on this website</h3>
+        <p>
+          This website sets no cookies and uses no similar technologies: no local storage, session
+          storage or IndexedDB, and no tracking pixels. There is nothing to consent to and nothing
+          to remove. Opening one of these policies changes only the address (for example
+          <code>#cookies</code>), which is not stored anywhere.
+        </p>
+
+        <h3>In the Lookout dashboard</h3>
+        <p>The dashboard you run on your own server uses these, all strictly necessary:</p>
+        <div class="policy-table-box">
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row"><code>lookout_session</code></th>
+                <td data-label="Type">Cookie</td>
+                <td data-label="Purpose">
+                  Keeps you signed in. HttpOnly, SameSite=Strict, and Secure over HTTPS; it expires
+                  after <code>LOOKOUT_SESSION_IDLE_DAYS</code> unused (7 by default), 30 days after
+                  sign-in, or when Lookout restarts.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row"><code>lookout.mode</code>, <code>lookout.theme</code></th>
+                <td data-label="Type">Local storage</td>
+                <td data-label="Purpose">Your chosen mode and colour theme, from Settings.</td>
+              </tr>
+              <tr>
+                <th scope="row"><code>lookout.grid.&lt;page&gt;</code></th>
+                <td data-label="Type">Local storage</td>
+                <td data-label="Purpose">
+                  Where you moved, sized, pinned or hid each Widget on a page.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>None of them ever leaves your server or your browser.</p>
+      </div>
+      <div class="modal__footer">
+        <button class="button button--primary" type="button" commandfor="cookies" command="close">
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <dialog class="modal" id="accessibility" aria-labelledby="accessibility-title" closedby="any">
+      <div class="modal__header">
+        <h2 id="accessibility-title">Accessibility</h2>
+        <button class="icon-button" type="button" commandfor="accessibility" command="close">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close" /></svg>
+          <span class="visually-hidden">Close accessibility statement</span>
+        </button>
+      </div>
+      <div
+        class="modal__body prose"
+        role="region"
+        aria-labelledby="accessibility-title"
+        tabindex="0"
+      >
+        <p class="policy-updated">Last reviewed: November 2026</p>
+
+        <div class="status-box">
+          <svg class="icon" aria-hidden="true" focusable="false">
+            <use href="#i-shield-check" />
+          </svg>
+          <p>
+            <strong>Conformance status:</strong> this website, and the Lookout dashboard, are built
+            to meet the Web Content Accessibility Guidelines (WCAG) 2.2 at
+            <strong>Level AA</strong>.
+          </p>
+        </div>
+
+        <h3>What we have done</h3>
+        <ul>
+          <li>
+            <strong>Keyboard access</strong> — every link, button and dialog works with a keyboard
+            alone, with a clear focus outline that the sticky header and footer never hide. A “Skip
+            to content” link leads the page.
+          </li>
+          <li>
+            <strong>Without JavaScript</strong> — every section reads in full, these policies still
+            open, and each screenshot links to its full-size image.
+          </li>
+          <li>
+            <strong>Screen readers</strong> — one main heading, labelled landmarks and regions,
+            descriptive alternative text for every screenshot, and a text description of the
+            animated demo.
+          </li>
+          <li>
+            <strong>Colour and contrast</strong> — text has at least 4.5:1 contrast with its
+            background, and controls and focus outlines at least 3:1, in light and dark.
+          </li>
+          <li>
+            <strong>Light and dark</strong> — the page follows your device’s setting, and the
+            screenshots follow it too.
+          </li>
+          <li>
+            <strong>Motion</strong> — the animated demo at the top can be paused, and holds a still
+            frame when your device asks for reduced motion; nothing else moves.
+          </li>
+          <li>
+            <strong>Zoom and reflow</strong> — the page fits screens 360 pixels wide with no
+            sideways scrolling; wide tables and code scroll on their own.
+          </li>
+          <li><strong>Target sizes</strong> — every control is at least 24 by 24 pixels.</li>
+          <li>
+            <strong>Checked automatically</strong> — on every change, the axe-core accessibility
+            engine checks the page in light and dark at 360 and 1280 pixels, and the dialogs, the
+            screenshot lightbox and the demo’s pause are checked in a real browser.
+          </li>
+        </ul>
+
+        <h3>Known limitations</h3>
+        <ul>
+          <li>
+            The animated demo is a picture of the dashboard: its text description tells you what it
+            shows, and the screenshots below show each page in full.
+          </li>
+          <li>Screenshots are images of text; the sections around them describe each page.</li>
+        </ul>
+
+        <h3>Feedback</h3>
+        <p>
+          If something is hard to use, please <a href="%ISSUES_URL%">open an issue</a> saying what
+          you were trying to do, and with which browser and assistive technology.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <button
+          class="button button--primary"
+          type="button"
+          commandfor="accessibility"
+          command="close"
+        >
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <dialog class="lightbox" aria-labelledby="lightbox-caption" closedby="any">
+      <form method="dialog" class="lightbox__bar">
+        <p class="lightbox__caption" id="lightbox-caption">Screenshot</p>
+        <button class="button button--small button--ghost" type="submit">Close</button>
+      </form>
+    </dialog>
+
+    <script type="module" src="./main.ts"></script>
+    <script type="module" src="./demos/main.tsx"></script>
+  </body>
+</html>

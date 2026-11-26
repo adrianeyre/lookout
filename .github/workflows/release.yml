@@ -1,0 +1,122 @@
+# After CI passes on main: publish :edge, then let semantic-release decide whether the
+# merged commits make a release (PRD §8). A release gets a vX.Y.Z tag, a GitHub Release,
+# a CHANGELOG.md entry and the :X.Y.Z, :X.Y and :latest Images.
+name: Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One release at a time, in merge order.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  edge:
+    name: Publish :edge
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/image.yml
+    with:
+      ref: ${{ github.event.workflow_run.head_sha }}
+
+  # The pen-test release gate (docs/product-requirements-document/pen-testing.md#the-gate):
+  # no versioned release while the round's tracking issue is open, or while an open
+  # prd:pen-test issue is severity:critical or severity:high. :edge above does not wait for
+  # it. Runs before semantic-release and reads issues only; it installs no dependencies.
+  gate:
+    name: Pen-test release gate
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # To check out the gate's script; it never writes.
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: package.json
+      - name: Fail while the pen-test round or a high or critical finding is open
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          # The current round's tracking issue; the next round names its own.
+          PEN_TEST_TRACKING_ISSUE: '75'
+        run: node scripts/release-gate.ts
+
+  release:
+    name: semantic-release
+    needs: [edge, gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # To push the tag and the CHANGELOG.md commit, and create the GitHub Release.
+      # Nothing else: semantic-release comments on no issue or pull request (.releaserc.json),
+      # so its dependencies never hold issues or pull-requests write (#127).
+      contents: write
+    outputs:
+      published: ${{ steps.release.outputs.published }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          # semantic-release pushes with GITHUB_TOKEN below.
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # semantic-release releases from a branch, not a detached commit.
+      - run: git checkout -B main
+      - name: Release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          before=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          pnpm exec semantic-release
+          after=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          if [ -n "$after" ] && [ "$after" != "$before" ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$after" >> "$GITHUB_OUTPUT"
+            echo "version=${after#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  image:
+    name: Publish the release Images
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/image.yml
+    with:
+      ref: ${{ needs.release.outputs.tag }}
+      version: ${{ needs.release.outputs.version }}

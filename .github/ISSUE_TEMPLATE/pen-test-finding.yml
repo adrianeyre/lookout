@@ -1,0 +1,78 @@
+# A confirmed weakness found in a pen-test round (docs/pen-test/README.md). Add exactly one
+# severity:* label when filing, per the PRD's severity table.
+name: Pen-test finding
+description: A confirmed weakness found by a pen-test scope issue. One finding per issue.
+title: 'Pen-test finding: '
+labels: ['prd:pen-test']
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Private, like the PRD. Add exactly one of `severity:critical`, `severity:high`,
+        `severity:medium` or `severity:low`, by the
+        [severity table](../blob/main/docs/product-requirements-document/pen-testing.md#findings-workflow).
+        In an external round a critical finding is never filed here first.
+  - type: input
+    id: scope-issue
+    attributes:
+      label: Scope issue
+      description: The scope issue it was found under, for example #63.
+      placeholder: '#63'
+    validations:
+      required: true
+  - type: input
+    id: h-entry
+    attributes:
+      label: H entry
+      description: The hypothesis in the PRD's opening register it confirms, or "none".
+      placeholder: H1
+    validations:
+      required: true
+  - type: dropdown
+    id: configuration
+    attributes:
+      label: Configuration
+      options:
+        - default (compose.yaml)
+        - socket proxy (compose.socket-proxy.yaml)
+        - both
+        - in-process (configuration-independent)
+    validations:
+      required: true
+  - type: textarea
+    id: rule
+    attributes:
+      label: Rule broken (PRD requirement and ADR)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+    validations:
+      required: true
+  - type: textarea
+    id: test
+    attributes:
+      label: Test that would have caught it
+      description: The probe (an `it.fails` today) that becomes a regression test with the fix.
+    validations:
+      required: true
