@@ -260,6 +260,7 @@ describe('certificateFrom', () => {
     expect(certificateFrom(certificate, 'www.secure.example', null)).toEqual({
       subject: 'secure.example',
       issuer: 'Lookout Test CA',
+      validFrom: Date.parse(certificate.validFrom),
       validTo: Date.parse('2036-01-01T00:00:00Z'),
       hostnameMatches: true,
       trusted: true,

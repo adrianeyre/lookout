@@ -61,9 +61,12 @@ export function certificateFrom(
       : certificate.checkIP(hostname)) !== undefined;
   // Expiry and a hostname mismatch are reported as such, not as an untrusted issuer.
   const trusted = verifyError === null || NOT_TRUST_ERRORS.has(verifyError);
+  const validFrom = Date.parse(certificate.validFrom);
   return {
     subject: dnField(certificate.subject, 'CN'),
     issuer: dnField(certificate.issuer, 'O') ?? dnField(certificate.issuer, 'CN') ?? 'Unknown',
+    // The lifetime decides how a short-lived certificate is judged (tlsWindows).
+    ...(Number.isFinite(validFrom) ? { validFrom } : {}),
     validTo: Date.parse(certificate.validTo),
     hostnameMatches,
     trusted,

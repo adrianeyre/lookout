@@ -103,4 +103,13 @@ describe('Hosted Site helpers', () => {
     ).toEqual({ level: 'critical', text: 'Expired 2 days ago' });
     expect(tlsSummary(sites[4]!, NOW, tls)).toBeNull();
   });
+
+  it('counts a short-lived certificate in hours and does not flag it while it renews', () => {
+    const hour = DAY_MS / 24;
+    const caddy = cert({ validFrom: NOW - 7 * hour, validTo: NOW + 5 * hour });
+    expect(tlsSummary(withTls('https://a.example/', caddy), NOW, tls)).toEqual({
+      level: 'ok',
+      text: 'Expires in 5 hours',
+    });
+  });
 });

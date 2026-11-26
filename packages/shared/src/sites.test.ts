@@ -51,6 +51,36 @@ describe('tlsLevel', () => {
     expect(tlsLevel(cert, NOW, { warnDays: 30, criticalDays: 10 })).toBe('warn');
   });
 
+  it('judges a short-lived certificate by its lifetime, not the configured days', () => {
+    const HOUR = DAY_MS / 24;
+    // Caddy's local CA: 12-hour certificates, renewed with 4 hours left.
+    const caddy = (hoursLeft: number) =>
+      certificate({ validFrom: NOW - (12 - hoursLeft) * HOUR, validTo: NOW + hoursLeft * HOUR });
+    expect(tlsLevel(caddy(11), NOW, thresholds)).toBe('ok');
+    expect(tlsLevel(caddy(4.5), NOW, thresholds)).toBe('ok');
+    expect(tlsLevel(caddy(3.5), NOW, thresholds)).toBe('warn');
+    expect(tlsLevel(caddy(1.5), NOW, thresholds)).toBe('critical');
+    // Let's Encrypt's 6-day certificates: amber at 2 days, red at 1.
+    const sixDay = (daysLeft: number) =>
+      certificate({ validFrom: NOW - (6 - daysLeft) * DAY_MS, validTo: NOW + daysLeft * DAY_MS });
+    expect(tlsLevel(sixDay(3), NOW, thresholds)).toBe('ok');
+    expect(tlsLevel(sixDay(1.5), NOW, thresholds)).toBe('warn');
+    expect(tlsLevel(sixDay(0.5), NOW, thresholds)).toBe('critical');
+  });
+
+  it('keeps the configured days for a long-lived certificate', () => {
+    const ninetyDay = (daysLeft: number) =>
+      certificate({ validFrom: NOW - (90 - daysLeft) * DAY_MS, validTo: NOW + daysLeft * DAY_MS });
+    expect(tlsLevel(ninetyDay(20), NOW, thresholds)).toBe('ok');
+    expect(tlsLevel(ninetyDay(10), NOW, thresholds)).toBe('warn');
+    expect(tlsLevel(ninetyDay(5), NOW, thresholds)).toBe('critical');
+  });
+
+  it('is red once a short-lived certificate has expired', () => {
+    const expired = certificate({ validFrom: NOW - (13 * DAY_MS) / 24, validTo: NOW - 1 });
+    expect(tlsLevel(expired, NOW, thresholds)).toBe('critical');
+  });
+
   it('is ok for an http Hosted Site, which has no certificate', () => {
     expect(tlsLevel(null, NOW, thresholds)).toBe('ok');
   });
