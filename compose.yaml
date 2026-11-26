@@ -1,0 +1,56 @@
+# Reference deployment (PRD §10). Put the settings in a .env file next to this one; the
+# README's quick start writes it for you.
+#
+# Lookout has root-equivalent access to Docker. It must only be reachable over your LAN or
+# VPN: set LOOKOUT_BIND_ADDRESS to that interface's address, never a public one.
+services:
+  lookout:
+    # Pin a minor version (X.Y) to get fixes without surprises; change it to upgrade.
+    # :latest follows every release and :edge follows main.
+    image: ghcr.io/adrianeyre/lookout:1.0
+    container_name: lookout
+    restart: unless-stopped
+    network_mode: host
+    # Defence in depth (#123): Lookout needs no capability (the socket is reached through its
+    # group, the Host root through file permissions), never gains privileges, writes nothing
+    # to its own filesystem, and has a memory ceiling (the PRD's limits table, X1b).
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    mem_limit: 256m
+    labels:
+      # Lookout refuses to stop, restart or remove the Container with this label.
+      lookout.self: 'true'
+    # The Image runs as an unprivileged user; this group lets it reach the Docker socket.
+    group_add:
+      - ${DOCKER_GID:?Set DOCKER_GID in .env to the Docker socket's group (stat -c %g /var/run/docker.sock)}
+    environment:
+      LOOKOUT_PASSWORD_HASH: ${LOOKOUT_PASSWORD_HASH:?Set LOOKOUT_PASSWORD_HASH in .env}
+      LOOKOUT_SESSION_SECRET: ${LOOKOUT_SESSION_SECRET:?Set LOOKOUT_SESSION_SECRET in .env}
+      LOOKOUT_BIND_ADDRESS: ${LOOKOUT_BIND_ADDRESS:?Set LOOKOUT_BIND_ADDRESS in .env to your LAN or Tailscale address}
+      # Optional settings, with their defaults. See the README for each one.
+      LOOKOUT_PORT: ${LOOKOUT_PORT:-7777}
+      LOOKOUT_SAMPLE_INTERVAL_MS: ${LOOKOUT_SAMPLE_INTERVAL_MS:-2000}
+      LOOKOUT_LIVE_WINDOW_MINUTES: ${LOOKOUT_LIVE_WINDOW_MINUTES:-15}
+      LOOKOUT_WARN_PERCENT: ${LOOKOUT_WARN_PERCENT:-80}
+      LOOKOUT_CRITICAL_PERCENT: ${LOOKOUT_CRITICAL_PERCENT:-90}
+      LOOKOUT_SESSION_IDLE_DAYS: ${LOOKOUT_SESSION_IDLE_DAYS:-7}
+      LOOKOUT_SESSION_MAX_DAYS: ${LOOKOUT_SESSION_MAX_DAYS:-30}
+      # Names Lookout answers to besides IP addresses and localhost, e.g. a MagicDNS name.
+      LOOKOUT_HOSTNAMES: ${LOOKOUT_HOSTNAMES:-}
+      LOOKOUT_SECURE_COOKIE: ${LOOKOUT_SECURE_COOKIE:-false}
+      # Hosted Sites (the Websites page). Traefik and lookout.url labels are found on their own.
+      LOOKOUT_SITES: ${LOOKOUT_SITES:-}
+      LOOKOUT_SITE_CHECK_INTERVAL_SECONDS: ${LOOKOUT_SITE_CHECK_INTERVAL_SECONDS:-60}
+      LOOKOUT_SITE_TIMEOUT_MS: ${LOOKOUT_SITE_TIMEOUT_MS:-10000}
+      LOOKOUT_SITE_SLOW_MS: ${LOOKOUT_SITE_SLOW_MS:-2000}
+      LOOKOUT_TLS_WARN_DAYS: ${LOOKOUT_TLS_WARN_DAYS:-14}
+      LOOKOUT_TLS_CRITICAL_DAYS: ${LOOKOUT_TLS_CRITICAL_DAYS:-7}
+      # The Host's largest folders: hours between scans, 0 for only when asked.
+      LOOKOUT_FOLDER_SCAN_HOURS: ${LOOKOUT_FOLDER_SCAN_HOURS:-6}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The Host's root filesystem, read-only, so Host Metrics describe the Host (ADR-0003).
+      - /:/host:ro,rslave

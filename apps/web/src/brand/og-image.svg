@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#020617"/>
+      <stop offset="1" stop-color="#0b1226"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g transform="translate(96 150) scale(2.25)">
+    <rect width="64" height="64" rx="14" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+  <path d="M50.5 7.5l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z" fill="#fbbf24"/>
+  <circle cx="40" cy="9" r="1.3" fill="#cbd5e1"/>
+  <circle cx="56" cy="27" r="1.1" fill="#cbd5e1"/>
+  <path d="M30 38L20 55M30 38l10 17M30 38v17" fill="none" stroke="#cbd5e1" stroke-width="3.2" stroke-linecap="round"/>
+  <g transform="rotate(-30 30 33)">
+    <rect x="9" y="29.5" width="6" height="7" rx="1.5" fill="#f8fafc"/>
+    <rect x="14" y="27.5" width="26" height="11" rx="2.5" fill="#f8fafc"/>
+    <rect x="39" y="25" width="9" height="16" rx="2.5" fill="#fbbf24"/>
+  </g>
+    <circle cx="30" cy="38" r="3.4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.6"/>
+  </g>
+  <text x="276" y="252" fill="#f8fafc" font-family="Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-2">Lookout</text>
+  <text x="96" y="390" fill="#cbd5e1" font-family="Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="500">See your server's health and its containers</text>
+  <text x="96" y="446" fill="#fbbf24" font-family="Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="600">at a glance.</text>
+</svg>

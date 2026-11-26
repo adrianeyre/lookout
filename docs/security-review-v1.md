@@ -1,0 +1,43 @@
+# v1 security review
+
+Lookout is root-equivalent on its Host ([ADR-0003](architectural-decision-record/0003-deploy-as-container-with-host-access.md)), so the first versioned release follows a deliberate review (issue #29, PRD NFR-4, FR-26, FR-29 to FR-34). This file records what was checked, how each item is tested, and what was fixed.
+
+Reviewed: 25 November 2026, at the commit that adds this file.
+
+## Checklist
+
+| # | Item | Result | Evidence |
+| --- | --- | --- | --- |
+| 1 | Every route needs a session, including SSE streams and anything that could leak data | Pass | `authentication › protects every registered route that is not explicitly public` walks **every** registered route (pages → 302 to `/login`, everything else → 401 with no data). `only leaves login, liveness and static assets public` pins the public list to `/api/login`, `/login`, `/healthz` and the built SPA's files. The SPA bundle holds no Host or Container data; it all comes from authenticated API calls. SSE streams recheck their session on every heartbeat and close when it is revoked or expires (`e2e/layout.spec.ts › an expired session sends the user to login`). |
+| 2 | CSRF / Origin check on every state-changing request | Pass | `v1 security review › refuses every state-changing route cross-origin or without an Origin, even signed in` walks every non-GET route with a foreign, `null` and missing `Origin`. The cookie is also `SameSite=Strict` (`auth.test.ts`). |
+| 3 | Container Actions on `lookout.self=true` refused through the API | Pass | `Container Actions › refuses stop, restart and remove on Lookout's own Container with 403, doing nothing` (by ID and by name, every action); `e2e/actions.spec.ts` calls the API directly from a signed-in browser and gets 403. The same rule (`actionRefusal`) disables the buttons. |
+| 4 | No path traversal through Container IDs, mount paths or `LOOKOUT_HOST_ROOT` | Pass | Container references must match Docker's name grammar before Docker is asked: `v1 security review › rejects path traversal through Container references on every :id route` (`..`, encoded slashes, NUL…; Docker is never called). The Engine client percent-encodes the reference into the URL path. Host paths go through `HostRoot.path()`, which refuses anything outside the Host root (`host-root.test.ts`); mount points come from the Host's own mount table and are `statfs`ed. Since the Largest folders Widget (FR-14a), Lookout also **lists the Host's directories** under each real filesystem and `lstat`s their entries, never opening a file: it never enters `/home` or `/root` or anything mounted under them, never follows a link (a linked mount point is skipped, each directory is opened without following links and checked to be the one it listed), and stops at 5,000,000 entries, 256 folders deep or 10 minutes (pen-test findings #107, #109, #110, amended 25 November 2026). Every Host-root read is refused if, once links are followed, it would leave the Host root (#113). `LOOKOUT_HOST_ROOT` must be absolute (`config.test.ts`). |
+| 5 | Env values, the password hash and the session secret never appear in logs or unrevealed responses | Pass | `v1 security review › keeps env values, the password hash and the session secret out of logs` (trace-level log across sign-in, a reveal, a failed action), `never sends env values in the list, detail or live stream snapshot`, `authentication › never logs the password or its hash`, and `config.test.ts › refuses a password hash that is not Argon2id, without echoing it`. Request logs redact `cookie`, `authorization` and `set-cookie`. A reveal logs the variable **name** only. |
+| 6 | Security headers: CSP, `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy` | **Fixed** | Added a strict `Content-Security-Policy` (`default-src 'self'`, no inline script, `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'none'`), plus `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` and `Permissions-Policy`, and `Cache-Control: no-store` on API answers. Tested on pages, assets, API answers and errors (`v1 security review › sends security headers…`); `e2e/security.spec.ts` checks the real SPA raises no CSP violation on any page or dialog. |
+| 7 | Login rate limit and session expiry | Pass | `authentication › rejects the 6th failed login within 15 minutes, even with the right password` and `expires a session after the idle period`; `auth.test.ts` covers the limiter window and refresh. |
+| 8 | Default bind address is `127.0.0.1` | Pass | `config.test.ts › uses the PRD defaults`. `compose.yaml` refuses to start without an explicit `LOOKOUT_BIND_ADDRESS`. |
+| 9 | `pnpm audit` and an Image vulnerability scan are clean | **Fixed** | `pnpm audit`: no known vulnerabilities (all dependencies, and `--prod`). Trivy 0.76.2 first found 6 HIGH, 19 MEDIUM and 5 LOW: all of the Node.js ones were in the **npm CLI bundled with the base Image**, which Lookout never runs, and the rest in Alpine's OpenSSL and zlib. The runtime stage now runs `apk upgrade` and deletes npm, npx and corepack; the scan is now **0 findings**. CI scans every Image build and fails on any fixable HIGH or CRITICAL. |
+
+## Other findings fixed in this release
+
+- **The Image ran as root.** It now runs as an unprivileged user; `compose.yaml` grants only the Docker socket's group (`DOCKER_GID`). _Amended 25 November 2026:_ that user was `node` (UID 1000), the owner's own account on most Hosts, so it could read their home through the `/` mount (pen-test finding #106); it is now `lookout`, UID 65532, which no Host account uses. This does not make Docker access less root-equivalent (see below), but a bug in Lookout no longer runs as root inside its Container. CI checks the Image is non-root and becomes healthy.
+- **dockerode's dependency tree** (SSH, gRPC and protobuf clients) was replaced by a small Engine API client over the local socket. Less code with access to the socket, and 30 MB less memory (NFR-1).
+- **The server runs compiled JavaScript** in the Image; no TypeScript, tests or fake Docker are present (CI checks this).
+
+## Accepted risks (by design)
+
+- **Docker socket access is root-equivalent.** Anyone who signs in to Lookout, or compromises it, can control the Host through Docker. This is inherent in a Docker dashboard (ADR-0003) and is why Lookout must only be reachable over a LAN or VPN, binds to `127.0.0.1` unless told otherwise (and warns at start when it does not, #122), and limits Container Actions to start, stop, restart and remove (ADR-0005). Narrowing the socket with a filtering proxy ([#45](https://github.com/adrianeyre/lookout/issues/45)) is now available as an opt-in: `compose.socket-proxy.yaml` ([ADR-0011](architectural-decision-record/0011-optional-docker-socket-proxy.md)). **Stops being true** if Lookout gains users other than its owner, or is recommended for a network its owner does not control; it is revisited by the next pen-test round, on 25 February 2027 at the latest.
+- **No TLS in Lookout itself.** It is meant to be reached over a VPN such as Tailscale, which encrypts the connection (ADR-0008). Behind an HTTPS reverse proxy the cookie is `Secure` when the proxy sends `X-Forwarded-Proto: https`, or when `LOOKOUT_SECURE_COOKIE=true` is set for one that does not (nginx sends no `X-Forwarded-Proto` by default); the proxy's host name must also be in `LOOKOUT_HOSTNAMES` (pen-test findings #86 and #132, amended 25 November 2026). The README says never to expose it publicly. **Stops being true** if a reverse proxy becomes a supported way to reach Lookout, or on 25 February 2027 (the next round), whichever comes first.
+- **Sessions and the login rate limit live in memory**, so restarting Lookout signs everyone out and resets the limiter. Acceptable for a single-user dashboard; nothing is written to disk (ADR-0004). **Stops being true** if Lookout gains a second user, or on 25 February 2027 (the next round), whichever comes first.
+- **A signed-in user can reveal environment values.** That is the feature (FR-20); values are fetched one at a time, never cached (`no-store`), and each reveal is logged by name. Lookout's own Containers' secrets are never revealed (#79). **Stops being true** if Lookout gains a second user, whose access would then need to differ from the owner's.
+
+## How to repeat this review
+
+```sh
+pnpm test                      # the regression tests named above
+pnpm test:e2e                  # includes e2e/security.spec.ts and e2e/actions.spec.ts
+pnpm audit
+docker build -t lookout:review .
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.2 \
+  image --scanners vuln lookout:review
+```

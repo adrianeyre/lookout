@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- GitHub Pages sends no headers, so the policy is a meta tag (#128). site:dev drops it. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="%THEME_DARK%" />
+    <meta name="robots" content="noindex, follow" />
+    <title>Page not found · Lookout</title>
+    <meta name="description" content="%DESCRIPTION%" />
+    %ICON_HEAD%
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="not-found night">
+    <main class="wrap not-found__inner" id="main">
+      <svg class="not-found__mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <path
+          d="M50.5 7.5l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z"
+          fill="#fbbf24"
+        />
+        <path
+          d="M30 38L20 55M30 38l10 17M30 38v17"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3.2"
+          stroke-linecap="round"
+          opacity="0.8"
+        />
+        <g transform="rotate(-30 30 33)" fill="currentColor">
+          <rect x="9" y="29.5" width="6" height="7" rx="1.5" />
+          <rect x="14" y="27.5" width="26" height="11" rx="2.5" />
+          <rect x="39" y="25" width="9" height="16" rx="2.5" fill="#fbbf24" />
+        </g>
+        <circle cx="30" cy="38" r="3.4" fill="#fbbf24" />
+      </svg>
+      <p class="eyebrow">404</p>
+      <h1>Nothing in sight here</h1>
+      <p class="lede">The page you were looking for isn’t on this site. It may have moved.</p>
+      <div class="actions">
+        <a class="button button--primary" href="/">Go to the Lookout home page</a>
+        <a class="button button--ghost" href="%REPO_URL%">Lookout on GitHub</a>
+      </div>
+    </main>
+  </body>
+</html>

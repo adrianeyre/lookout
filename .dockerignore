@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+.git
+.github
+docs
+e2e
+test-results
+playwright-report
+apps/server/test
+apps/server/test-support
+apps/web/screenshots
+**/*.test.ts
+**/*.test.tsx
+.env
+.env.*
+pen-test

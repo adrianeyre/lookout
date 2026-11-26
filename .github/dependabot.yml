@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # The pnpm workspace (pnpm-lock.yaml) is handled by the npm ecosystem.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Node's major version moves deliberately, with the engines and Dockerfile pins.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+
+  # The Dockerfile's Node base image, pinned by tag and digest.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      docker-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
+
+  # Actions are pinned to commit SHAs; Dependabot updates the SHA and the version comment.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-and-patch:
+        update-types: [minor, patch]
+
+  # Images in the Compose files: the optional socket proxy, pinned by tag and digest, and
+  # Lookout's own X.Y tag, which Dependabot moves to each new minor release (#126).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly

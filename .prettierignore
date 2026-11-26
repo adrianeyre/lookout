@@ -1,0 +1,13 @@
+pnpm-lock.yaml
+dist/
+coverage/
+test-results/
+playwright-report/
+e2e/.tmp/
+apps/web/public/
+apps/server/test/fixtures/
+e2e/fixtures/
+docs/
+site/stageshow/kit/
+site/stageshow/LICENSE
+site/stageshow/NOTICE.md
