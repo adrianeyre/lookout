@@ -1,4 +1,5 @@
 import type { ContainerEvent, ContainerStats, LogLine } from '@lookout/shared';
+import type { DiskUsageReport } from './disk-usage.ts';
 import type { InspectedContainer } from './parse.ts';
 
 export interface LogOptions {
@@ -30,4 +31,9 @@ export interface DockerClient {
   restartContainer(id: string): Promise<void>;
   /** Never forced and never removes volumes (FR-25). */
   removeContainer(id: string): Promise<void>;
+  /**
+   * Docker's disk usage (GET /system/df) for Site Stats. Slow on a busy Host, so it is asked
+   * for once a day and on "Measure now", never per page view. Read-only (ADR-0013).
+   */
+  diskUsage(): Promise<DiskUsageReport>;
 }

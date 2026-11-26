@@ -14,6 +14,7 @@ import { HostRoot } from '../src/host-root.ts';
 import { FakeDocker, makeContainer } from './fake-docker.ts';
 import { FAKE_SITE_MODES, FakeSite, makeCertificate, type FakeSiteMode } from './fake-site.ts';
 import { FIXTURE_LOGS, fixtureContainers } from './e2e-fixtures.ts';
+import { caddyLog } from './caddy-log.ts';
 
 const fixture = fileURLToPath(new URL('../../../e2e/fixtures/host/', import.meta.url));
 // The e2e hash is cheap on purpose, so sign-ins stay quick (#124 allows it only here).
@@ -38,6 +39,23 @@ if (process.env.LOOKOUT_E2E_SEED === '1') {
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, Buffer.alloc(bytes, 7));
   }
+  // Site Stats: today's requests for the shop site (shop-web-1's lookout.url), as Caddy logs
+  // them: 3 human visitors with 5 page views between them, and 2 bot requests.
+  if (config.dataDir) await rm(config.dataDir, { recursive: true, force: true });
+  const host = `store.example:${config.port + 1000}`;
+  const at = Date.now() - 60_000;
+  const log = caddyLog([
+    { ts: at, host, remoteIp: '192.0.2.1', uri: '/' },
+    { ts: at, host, remoteIp: '192.0.2.1', uri: '/products?session=abc' },
+    { ts: at, host, remoteIp: '192.0.2.2', uri: '/', referer: 'https://news.example/story' },
+    { ts: at, host, remoteIp: '192.0.2.2', uri: '/about' },
+    { ts: at, host, remoteIp: '2001:db8:5:6::1', uri: '/' },
+    { ts: at, host, remoteIp: '2001:db8:5:6::1', uri: '/logo.png', contentType: 'image/png' },
+    { ts: at, host, remoteIp: '66.249.66.1', userAgent: 'Googlebot/2.1', uri: '/' },
+    { ts: at, host, remoteIp: '198.51.100.4', userAgent: 'curl/8.5.0', uri: '/', status: 404 },
+  ]);
+  await mkdir(path.join(config.hostRoot, 'var/log/caddy'), { recursive: true });
+  await writeFile(path.join(config.hostRoot, 'var/log/caddy/access.log'), log);
 }
 
 /**
@@ -94,6 +112,10 @@ const app = await buildApp({
   statsFlushMs: 250,
   // The first scan of the largest folders starts straight away, not after 30 s.
   folderScanDelayMs: 500,
+  // Site Stats read the access log and write their totals quickly, and measure sizes soon.
+  siteStatsPollMs: 250,
+  siteStatsWriteMs: 250,
+  measureDelayMs: 1000,
   logger: { level: 'error' },
 });
 

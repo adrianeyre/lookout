@@ -1,12 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import type { MemoryMetrics } from '@lookout/shared';
+import type { MemoryMetrics, StatsOverview } from '@lookout/shared';
 import {
   byTraffic,
   CpuCard,
   DiskCard,
   DiskIoCard,
+  DockerDiskCard,
   MemoryCard,
   NetworkCard,
   OverviewCard,
@@ -242,5 +243,97 @@ describe('sparklines', () => {
     const sparkline = screen.getByTestId('cpu-sparkline');
     expect(sparkline.dataset.points).toBe('3');
     expect(sparkline.getAttribute('aria-label')).toBe('CPU usage, last 15 minutes');
+  });
+});
+
+describe('DockerDiskCard', () => {
+  const NOW = Date.parse('2026-11-26T12:00:00Z');
+  const part = (count: number, bytes: number, reclaimableBytes: number) => ({
+    count,
+    bytes,
+    reclaimableBytes,
+  });
+  const overview = (overrides: Partial<StatsOverview> = {}): StatsOverview => ({
+    available: true,
+    error: null,
+    persistent: true,
+    retentionDays: 90,
+    accessLogs: false,
+    sites: {},
+    measure: { state: 'idle', lastMeasuredAt: NOW, error: null },
+    docker: {
+      latest: {
+        measuredAt: NOW,
+        images: part(18, 6 * GiB, 0.5 * GiB),
+        containers: part(16, 0, 0),
+        volumes: part(50, 10 * GiB, 3 * GiB),
+        buildCache: part(31, GiB, GiB),
+      },
+      points: [
+        {
+          start: NOW - 86_400_000,
+          imagesBytes: 6 * GiB,
+          containersBytes: 0,
+          volumesBytes: 9 * GiB,
+          buildCacheBytes: GiB,
+        },
+        {
+          start: NOW,
+          imagesBytes: 6 * GiB,
+          containersBytes: 0,
+          volumesBytes: 10 * GiB,
+          buildCacheBytes: GiB,
+        },
+      ],
+    },
+    ...overrides,
+  });
+
+  it('shows each part with what pruning could free, and the trend, with no prune button', () => {
+    render(<DockerDiskCard overview={overview()} error={null} now={NOW} onMeasured={() => {}} />);
+    expect(screen.getByTestId('docker-disk-total').textContent).toBe('17.0 GiB');
+    const rows = screen.getAllByTestId('docker-disk-row');
+    expect(rows.map((row) => row.getAttribute('data-part'))).toEqual([
+      'images',
+      'containers',
+      'volumes',
+      'buildCache',
+    ]);
+    expect(rows[2]!.textContent).toBe('Volumes5010.0 GiB3.00 GiB');
+    expect(screen.getByTestId('docker-disk-chart').getAttribute('data-points')).toBe('2');
+    expect(screen.queryByRole('button', { name: /prune/i })).toBeNull();
+    expect(screen.getByTestId('measure-now')).toBeTruthy();
+  });
+
+  it('says when it has never been measured, and why it is unavailable', () => {
+    const { rerender } = render(
+      <DockerDiskCard
+        overview={overview({ docker: { latest: null, points: [] } })}
+        error={null}
+        now={NOW}
+        onMeasured={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('docker-disk-empty').textContent).toContain('Not measured yet');
+    rerender(
+      <DockerDiskCard
+        overview={overview({ available: false, error: 'Could not open the stats store' })}
+        error={null}
+        now={NOW}
+        onMeasured={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('docker-disk-error').textContent).toBe(
+      'Could not open the stats store',
+    );
+    rerender(
+      <DockerDiskCard
+        overview={undefined}
+        error="Lookout cannot be reached."
+        now={NOW}
+        onMeasured={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('docker-disk-error').textContent).toBe('Lookout cannot be reached.');
   });
 });

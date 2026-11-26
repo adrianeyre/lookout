@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { login } from './server.ts';
+import { E2E_PORT, login, siteUrl } from './server.ts';
 
 const widget = (page: Page, id: string) => page.locator(`[data-widget="${id}"]`);
 const cell = (page: Page, id: string) =>
@@ -81,7 +82,17 @@ test('on a phone, Widgets stack in order with no sideways scroll', async ({ page
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-for (const path of ['/', '/containers', '/containers/c0ffee000001', '/websites', '/settings']) {
+/** The shop site's Site Stats page: a Hosted Site's ID is its URL's SHA-256, cut to 16. */
+const shopStats = `/websites/${createHash('sha256').update(siteUrl(E2E_PORT)).digest('hex').slice(0, 16)}`;
+
+for (const path of [
+  '/',
+  '/containers',
+  '/containers/c0ffee000001',
+  '/websites',
+  shopStats,
+  '/settings',
+]) {
   test(`the Widgets on ${path} meet WCAG 2.2 AA`, async ({ page }) => {
     await page.goto(path);
     await expect(page.locator('.widget').first()).toBeVisible();

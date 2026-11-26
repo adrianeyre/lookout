@@ -6,6 +6,7 @@ import { ContainersPage } from './pages/ContainersPage.tsx';
 import { HostPage } from './pages/HostPage.tsx';
 import { LoginPage } from './pages/LoginPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
+import { SiteStatsPage } from './pages/SiteStatsPage.tsx';
 import { WebsitesPage } from './pages/WebsitesPage.tsx';
 import { routeFor, usePathname, type Route } from './router.ts';
 
@@ -21,6 +22,8 @@ function Page({ route }: { route: DashboardRoute }) {
       return <ContainerDetailPage key={route.id} id={route.id} />;
     case 'websites':
       return <WebsitesPage />;
+    case 'site':
+      return <SiteStatsPage key={route.id} id={route.id} />;
     case 'settings':
       return <SettingsPage />;
   }

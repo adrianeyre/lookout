@@ -6,7 +6,9 @@ import {
   siteFlagReason,
   type ContainersSnapshot,
   type HostedSite,
+  type SiteSummary,
   type SitesSnapshot,
+  type StatsOverview,
   type SiteStatus,
   type TlsThresholds,
 } from '@lookout/shared';
@@ -16,7 +18,8 @@ import { Link } from '../components/Link.tsx';
 import { Sparkline } from '../components/Sparkline.tsx';
 import { useNow } from '../hooks.ts';
 import { useLiveEvent } from '../live.ts';
-import { containerPath } from '../router.ts';
+import { containerPath, sitePath } from '../router.ts';
+import { useStatsOverview } from '../stats.ts';
 import {
   NO_SITE_FILTERS,
   filterSites,
@@ -153,16 +156,39 @@ function SiteContainer({
   );
 }
 
+/** Today's visitors and the last 7 days', from the access logs (#11). */
+function SiteVisitors({ site, summary }: { site: HostedSite; summary: SiteSummary }) {
+  return (
+    <span className="site__visitors" data-testid="site-visitors">
+      <span>
+        <strong data-testid="site-visitors-today">
+          {summary.todayVisitors.toLocaleString('en-GB')}
+        </strong>{' '}
+        <span className="muted">{summary.todayVisitors === 1 ? 'visitor' : 'visitors'} today</span>
+      </span>
+      <Sparkline
+        series={[{ values: summary.last7Days, tone: 'secondary' }]}
+        capacity={7}
+        label={`Visitors per day over the last 7 days for ${site.url}: ${summary.last7Days.join(', ')}`}
+        testId="site-visitors-sparkline"
+      />
+    </span>
+  );
+}
+
 export function SiteRow({
   site,
   sites,
   containers,
   now,
+  summary,
 }: {
   site: HostedSite;
   sites: SitesSnapshot;
   containers: ContainersSnapshot | undefined;
   now: number;
+  /** Visitor figures, only when the access logs are read. */
+  summary?: SiteSummary | undefined;
 }) {
   const { tls, historyCapacity, checkIntervalMs } = sites.settings;
   const flagged = isSiteFlagged(site, now, tls);
@@ -205,6 +231,7 @@ export function SiteRow({
       </div>
       <div className="row__stats">
         <TlsBadge site={site} now={now} tls={tls} />
+        {summary && <SiteVisitors site={site} summary={summary} />}
       </div>
       <div className="site__trend">
         <Sparkline
@@ -213,7 +240,17 @@ export function SiteRow({
           label={`Response time over the last ${minutes} minutes`}
           testId="site-sparkline"
         />
-        <CheckNow site={site} />
+        <span className="site__actions">
+          <CheckNow site={site} />
+          <Link
+            href={sitePath(site.id)}
+            className="button button--quiet button--small"
+            testId="site-stats-link"
+          >
+            Stats
+            <span className="visually-hidden">: {site.url}</span>
+          </Link>
+        </span>
       </div>
     </li>
   );
@@ -272,10 +309,13 @@ export function SiteList({
   sites,
   containers,
   now,
+  stats,
 }: {
   sites: SitesSnapshot;
   containers: ContainersSnapshot | undefined;
   now: number;
+  /** Visitor figures for each row; none shown without them or without access logs. */
+  stats?: StatsOverview | undefined;
 }) {
   const [filters, setFilters] = useState<SiteFilters>(NO_SITE_FILTERS);
   const { tls } = sites.settings;
@@ -309,7 +349,14 @@ export function SiteList({
       ) : (
         <ul className="rows">
           {shown.map((site) => (
-            <SiteRow key={site.id} site={site} sites={sites} containers={containers} now={now} />
+            <SiteRow
+              key={site.id}
+              site={site}
+              sites={sites}
+              containers={containers}
+              now={now}
+              summary={stats?.available && stats.accessLogs ? stats.sites[site.id] : undefined}
+            />
           ))}
         </ul>
       )}
@@ -320,6 +367,7 @@ export function SiteList({
 export function WebsitesPage() {
   const sites = useLiveEvent('sites');
   const containers = useLiveEvent('containers');
+  const stats = useStatsOverview();
   const now = useNow(5000);
   return (
     <PageGrid
@@ -327,7 +375,7 @@ export function WebsitesPage() {
       title="Websites"
       widgets={{
         'websites.list': sites ? (
-          <SiteList sites={sites} containers={containers} now={now} />
+          <SiteList sites={sites} containers={containers} now={now} stats={stats.value} />
         ) : (
           <p className="muted" role="status">
             Loading Hosted Sites…

@@ -28,6 +28,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.getByRole('link', { name: 'Websites' }).click();
       await expect(page).toHaveURL(/\/websites$/);
       await expect(page.getByTestId('site-row').first()).toBeVisible();
+      await expectNoHorizontalScroll(page);
+
+      // A Site Stats page, with its charts, fits too.
+      await page.getByTestId('site-stats-link').first().click();
+      await expect(page.getByTestId('site-stats-title')).toBeVisible();
+      await expect(page.getByTestId('site-visitors')).toBeVisible();
+      await expectNoHorizontalScroll(page);
+      await page.getByRole('link', { name: /All Websites/ }).click();
+      await expect(page).toHaveURL(/\/websites$/);
       await expect(page.getByTestId('site-status').first()).not.toHaveText('checking');
       await page.getByLabel('Flagged only').check();
       await expectNoHorizontalScroll(page);

@@ -27,6 +27,11 @@ export function hostRootFor(port: number): string {
   return path.join(repoRoot, 'e2e', '.tmp', `host-${port}`);
 }
 
+/** Where a test server on this port keeps its Site Stats (LOOKOUT_DATA_DIR). */
+export function dataDirFor(port: number): string {
+  return path.join(repoRoot, 'e2e', '.tmp', `data-${port}`);
+}
+
 export function serverEnv(port: number): Record<string, string> {
   return {
     LOOKOUT_BIND_ADDRESS: '127.0.0.1',
@@ -41,6 +46,9 @@ export function serverEnv(port: number): Record<string, string> {
     LOOKOUT_SITE_CHECK_INTERVAL_SECONDS: String(SITE_CHECK_INTERVAL_MS / 1000),
     LOOKOUT_SITE_TIMEOUT_MS: '900',
     LOOKOUT_SITE_SLOW_MS: '300',
+    // Site Stats: the seeded Caddy access log (e2e-main.ts) and a data directory.
+    LOOKOUT_ACCESS_LOGS: path.join(hostRootFor(port), 'var/log/caddy/*.log'),
+    LOOKOUT_DATA_DIR: dataDirFor(port),
   };
 }
 

@@ -50,10 +50,14 @@ services:
       LOOKOUT_TLS_CRITICAL_DAYS: ${LOOKOUT_TLS_CRITICAL_DAYS:-7}
       # The Host's largest folders: hours between scans, 0 for only when asked.
       LOOKOUT_FOLDER_SCAN_HOURS: ${LOOKOUT_FOLDER_SCAN_HOURS:-6}
-      # Where a password changed in Settings is kept (as a hash only), in the volume below.
+      # Site Stats: the reverse proxy's access logs (Caddy JSON) under /host, for visitor
+      # figures (empty hides them), and how many days of daily totals to keep.
+      LOOKOUT_ACCESS_LOGS: ${LOOKOUT_ACCESS_LOGS:-}
+      LOOKOUT_STATS_RETENTION_DAYS: ${LOOKOUT_STATS_RETENTION_DAYS:-90}
+      # Where a password changed in Settings (as a hash only) and Site Stats are kept.
       LOOKOUT_DATA_DIR: /data
     volumes:
-      # Lookout's only writable place: the password chosen in Settings, nothing else.
+      # Lookout's only writable place: the password chosen in Settings and Site Stats' totals.
       - lookout-data:/data
       - /var/run/docker.sock:/var/run/docker.sock
       # The Host's root filesystem, read-only, so Host Metrics describe the Host (ADR-0003).

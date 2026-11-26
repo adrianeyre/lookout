@@ -78,7 +78,8 @@ describe('moving', () => {
   });
 
   it('dropped onto a short column, rises to the Widget above it', () => {
-    const start = defaultLayout('host');
+    // Docker disk, full width under Largest folders, would rise into its place: hidden here.
+    const start = setWidgetHidden(defaultLayout('host'), 'host.docker', true);
     const narrow = resizeWidget(start, 'host.folders', 4, start['host.folders']!.h);
     const placed = moveWidget(narrow, 'host.folders', 0, 80);
     // Under Overview and Memory, whatever row it was dropped on.
@@ -181,7 +182,7 @@ describe('never a whole blank row', () => {
   it('a Widget dropped far below the others comes up to meet them', () => {
     const layout = moveWidget(defaultLayout('host'), 'host.overview', 0, 200);
     expectNoBlankRows(layout);
-    expect(layout['host.overview']!.y).toBe(layout['host.folders']!.y + layout['host.folders']!.h);
+    expect(layout['host.overview']!.y).toBe(layout['host.docker']!.y + layout['host.docker']!.h);
   });
 
   it('hiding, pinning away or shrinking a Widget leaves no blank band', () => {

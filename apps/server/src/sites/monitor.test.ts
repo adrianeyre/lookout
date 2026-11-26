@@ -265,3 +265,16 @@ describe('SiteMonitor: the operator first, and refusals (#103, #104)', () => {
     expect(calls).toEqual([]);
   });
 });
+
+describe('SiteMonitor: checks for Site Stats', () => {
+  it('tells check listeners of each check that ran, and never of a refused Hosted Site', async () => {
+    const { monitor } = makeMonitor({ urls: ['https://shop.example/'] });
+    const seen: [string, SiteCheck][] = [];
+    monitor.subscribeChecks((id, result) => seen.push([id, result]));
+    // A label naming another service's loopback port is refused (#103).
+    monitor.updateContainers(snapshot({ 'lookout.url': 'http://127.0.0.1:5432/' }));
+    for (const site of monitor.snapshot.sites) await monitor.checkNow(site.id);
+    expect(seen.map(([id]) => id)).toEqual([siteId('https://shop.example/')]);
+    expect(seen[0]![1].status).toBe('up');
+  });
+});

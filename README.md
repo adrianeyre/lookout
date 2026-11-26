@@ -19,10 +19,11 @@ Website: [lookout.adrianeyre.co.uk](https://lookout.adrianeyre.co.uk) · Reposit
 - **Container detail:** Image and digest, command, environment variables (masked until you reveal one), mounts, networks, labels and restart history. Passwords and tokens in the command, labels and mount paths are masked too, each revealed on its own.
 - **Live logs:** stdout and stderr interleaved, follow mode, timestamps, and search with highlighted matches.
 - **Websites:** every Hosted Site the Host serves (found from Traefik labels, a `lookout.url` label or `LOOKOUT_SITES`), checked every minute: up, slow or down, the status code, response time, TLS certificate expiry, and the state of the Container behind it. Down sites and certificates about to expire are **Flagged**.
+- **Site Stats:** each Hosted Site's visitors, page views, bots, status codes and response times from your reverse proxy's access logs, plus uptime, certificate expiry, and its disk and Docker space, kept as daily totals for 90 days and drawn as charts on its own page. The Host page adds Docker's disk usage, with what could be reclaimed.
 - **Container Actions with guard-rails:** start, stop and restart (with confirmation), and remove stopped Containers (type the name to confirm). Lookout never touches its own Container, never removes volumes and never force-removes. There is deliberately no shell.
 - **Largest folders.** The ten folders using the most disk space, anywhere on the Host, each with a bar of its share of its disk. Scanned gently every 6 hours, or when you ask; folders Lookout cannot read are counted and named as left out.
 - **Widgets you arrange.** Every section can be dragged, resized, pinned or hidden, from the mouse or the keyboard, and each page remembers its layout in your browser.
-- **Light and dark, six themes, and it works on a phone.** Settings (in the Menu) chooses System, Light or Dark and one of six themes, all meeting WCAG 2.2 AA, and changes the password. One small Container, no database, no agents, no telemetry.
+- **Light and dark, six themes, and it works on a phone.** Settings (in the Menu) chooses System, Light or Dark and one of six themes, all meeting WCAG 2.2 AA, and changes the password. One small Container, no database server, no agents, no telemetry.
 
 ## Quick start
 
@@ -59,37 +60,44 @@ Then open `http://<that address>:7777` and sign in. To reach it by a name instea
 
 Everything is set by environment variable, in `.env` next to `compose.yaml`.
 
-| Variable                      | Default        | What it does                                                                                                                                                                                                  |
-| ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LOOKOUT_PASSWORD_HASH`       | _(required)_   | Argon2id hash of the login password, from `hash-password`. Only the hash is ever stored.                                                                                                                      |
-| `LOOKOUT_SESSION_SECRET`      | _(required)_   | Part of the key that signs session cookies. At least 32 random bytes; `openssl rand -base64 32` makes one. A repeated, patterned or placeholder value is refused at start.                                    |
-| `LOOKOUT_BIND_ADDRESS`        | `127.0.0.1`    | The IP address to listen on: your Tailscale or LAN address. Required by `compose.yaml`. Never a public address, and avoid `0.0.0.0` on a public Host.                                                         |
-| `DOCKER_GID`                  | _(required)_   | Compose only: the Docker socket's group (`stat -c %g /var/run/docker.sock`), so the non-root Image can reach it.                                                                                              |
-| `LOOKOUT_PORT`                | `7777`         | The port to listen on.                                                                                                                                                                                        |
-| `LOOKOUT_HOST_ROOT`           | `/host`        | Where the Host's root filesystem is mounted inside the Container.                                                                                                                                             |
-| `LOOKOUT_SAMPLE_INTERVAL_MS`  | `2000`         | How often Host Metrics are sampled, 250 to 60000 ms.                                                                                                                                                          |
-| `LOOKOUT_LIVE_WINDOW_MINUTES` | `15`           | How much history the sparklines keep, in memory only, 1 to 60 minutes.                                                                                                                                        |
-| `LOOKOUT_WARN_PERCENT`        | `80`           | Amber threshold for CPU, memory, swap and disk.                                                                                                                                                               |
-| `LOOKOUT_CRITICAL_PERCENT`    | `90`           | Red threshold. Must be higher than the warn threshold.                                                                                                                                                        |
-| `LOOKOUT_SESSION_IDLE_DAYS`   | `7`            | Sign out after this many days without a visit, 1 to 365.                                                                                                                                                      |
-| `LOOKOUT_SESSION_MAX_DAYS`    | `30`           | Sign out this many days after signing in, however often you visit, 1 to 365. Must be at least `LOOKOUT_SESSION_IDLE_DAYS`.                                                                                    |
-| `LOOKOUT_HOSTNAMES`           | _(none)_       | Host names Lookout answers to, comma-separated (for example `server.tailnet.ts.net`). IP addresses and `localhost` always work; any other name is refused, which stops DNS rebinding.                         |
-| `LOOKOUT_SECURE_COOKIE`       | `false`        | `true` always marks the session cookie `Secure`, for an HTTPS proxy that does not send `X-Forwarded-Proto`. Signing in over plain HTTP then fails.                                                            |
-| `LOOKOUT_DATA_DIR`            | _(none)_       | Where a password changed in Settings is kept, as an Argon2id hash in `password.json` (mode 600). `compose.yaml` sets `/data` on the `lookout-data` volume. Unset, the password can only be changed in `.env`. |
-| `LOG_LEVEL`                   | `info`         | Server log level: `warn`, `info` or `debug`.                                                                                                                                                                  |
-| `DOCKER_HOST`                 | _(the socket)_ | Optional: another Engine address, `unix:///path` or `tcp://host:2375`. TLS is not supported.                                                                                                                  |
+| Variable                      | Default        | What it does                                                                                                                                                                                                                                                                           |
+| ----------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LOOKOUT_PASSWORD_HASH`       | _(required)_   | Argon2id hash of the login password, from `hash-password`. Only the hash is ever stored.                                                                                                                                                                                               |
+| `LOOKOUT_SESSION_SECRET`      | _(required)_   | Part of the key that signs session cookies. At least 32 random bytes; `openssl rand -base64 32` makes one. A repeated, patterned or placeholder value is refused at start.                                                                                                             |
+| `LOOKOUT_BIND_ADDRESS`        | `127.0.0.1`    | The IP address to listen on: your Tailscale or LAN address. Required by `compose.yaml`. Never a public address, and avoid `0.0.0.0` on a public Host.                                                                                                                                  |
+| `DOCKER_GID`                  | _(required)_   | Compose only: the Docker socket's group (`stat -c %g /var/run/docker.sock`), so the non-root Image can reach it.                                                                                                                                                                       |
+| `LOOKOUT_PORT`                | `7777`         | The port to listen on.                                                                                                                                                                                                                                                                 |
+| `LOOKOUT_HOST_ROOT`           | `/host`        | Where the Host's root filesystem is mounted inside the Container.                                                                                                                                                                                                                      |
+| `LOOKOUT_SAMPLE_INTERVAL_MS`  | `2000`         | How often Host Metrics are sampled, 250 to 60000 ms.                                                                                                                                                                                                                                   |
+| `LOOKOUT_LIVE_WINDOW_MINUTES` | `15`           | How much history the sparklines keep, in memory only, 1 to 60 minutes.                                                                                                                                                                                                                 |
+| `LOOKOUT_WARN_PERCENT`        | `80`           | Amber threshold for CPU, memory, swap and disk.                                                                                                                                                                                                                                        |
+| `LOOKOUT_CRITICAL_PERCENT`    | `90`           | Red threshold. Must be higher than the warn threshold.                                                                                                                                                                                                                                 |
+| `LOOKOUT_SESSION_IDLE_DAYS`   | `7`            | Sign out after this many days without a visit, 1 to 365.                                                                                                                                                                                                                               |
+| `LOOKOUT_SESSION_MAX_DAYS`    | `30`           | Sign out this many days after signing in, however often you visit, 1 to 365. Must be at least `LOOKOUT_SESSION_IDLE_DAYS`.                                                                                                                                                             |
+| `LOOKOUT_HOSTNAMES`           | _(none)_       | Host names Lookout answers to, comma-separated (for example `server.tailnet.ts.net`). IP addresses and `localhost` always work; any other name is refused, which stops DNS rebinding.                                                                                                  |
+| `LOOKOUT_SECURE_COOKIE`       | `false`        | `true` always marks the session cookie `Secure`, for an HTTPS proxy that does not send `X-Forwarded-Proto`. Signing in over plain HTTP then fails.                                                                                                                                     |
+| `LOOKOUT_DATA_DIR`            | _(none)_       | Where a password changed in Settings is kept, as an Argon2id hash in `password.json` (mode 600), and Site Stats' totals in `stats.db`. `compose.yaml` sets `/data` on the `lookout-data` volume. Unset, the password can only be changed in `.env` and Site Stats are lost on restart. |
+| `LOG_LEVEL`                   | `info`         | Server log level: `warn`, `info` or `debug`.                                                                                                                                                                                                                                           |
+| `DOCKER_HOST`                 | _(the socket)_ | Optional: another Engine address, `unix:///path` or `tcp://host:2375`. TLS is not supported.                                                                                                                                                                                           |
 
 Hosted Sites ([Websites](#websites)):
 
-| Variable                              | Default  | What it does                                                                                                          |
-| ------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
-| `LOOKOUT_SITES`                       | _(none)_ | Extra Hosted Sites to check, as comma-separated `http` or `https` URLs. Lookout refuses to start with an invalid one. |
-| `LOOKOUT_SITE_CHECK_INTERVAL_SECONDS` | `60`     | How often every Hosted Site is checked, 1 to 3600 seconds.                                                            |
-| `LOOKOUT_SITE_TIMEOUT_MS`             | `10000`  | A check with no response after this long is down. No longer than the interval.                                        |
-| `LOOKOUT_SITE_SLOW_MS`                | `2000`   | A response slower than this is slow.                                                                                  |
-| `LOOKOUT_TLS_WARN_DAYS`               | `14`     | Amber when a certificate expires within this many days.                                                               |
-| `LOOKOUT_TLS_CRITICAL_DAYS`           | `7`      | Red within this many days. Must be lower than the warn days.                                                          |
-| `LOOKOUT_FOLDER_SCAN_HOURS`           | `6`      | How often the Host's largest folders are scanned, 0 to 168 hours. 0 scans only when you press Scan now.               |
+| Variable                              | Default  | What it does                                                                                                                                                                                                                                                                |
+| ------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LOOKOUT_SITES`                       | _(none)_ | Extra Hosted Sites to check, as comma-separated `http` or `https` URLs. Lookout refuses to start with an invalid one. Add `=/folder` to an entry (`https://cdn.example.com=/srv/cdn`) to size a site with no Container by the folder it serves ([Site Stats](#site-stats)). |
+| `LOOKOUT_SITE_CHECK_INTERVAL_SECONDS` | `60`     | How often every Hosted Site is checked, 1 to 3600 seconds.                                                                                                                                                                                                                  |
+| `LOOKOUT_SITE_TIMEOUT_MS`             | `10000`  | A check with no response after this long is down. No longer than the interval.                                                                                                                                                                                              |
+| `LOOKOUT_SITE_SLOW_MS`                | `2000`   | A response slower than this is slow.                                                                                                                                                                                                                                        |
+| `LOOKOUT_TLS_WARN_DAYS`               | `14`     | Amber when a certificate expires within this many days.                                                                                                                                                                                                                     |
+| `LOOKOUT_TLS_CRITICAL_DAYS`           | `7`      | Red within this many days. Must be lower than the warn days.                                                                                                                                                                                                                |
+| `LOOKOUT_FOLDER_SCAN_HOURS`           | `6`      | How often the Host's largest folders are scanned, 0 to 168 hours. 0 scans only when you press Scan now.                                                                                                                                                                     |
+
+Site Stats ([Site Stats](#site-stats)):
+
+| Variable                       | Default  | What it does                                                                                                                                                                           |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LOOKOUT_ACCESS_LOGS`          | _(none)_ | Your reverse proxy's access logs (Caddy JSON), under `LOOKOUT_HOST_ROOT`, with `*` and `?` allowed in the file name, such as `/host/var/log/caddy/*.log`. Unset hides visitor figures. |
+| `LOOKOUT_STATS_RETENTION_DAYS` | `90`     | Days of daily totals kept, 7 to 365. Hourly totals are kept 48 hours.                                                                                                                  |
 
 ## Websites
 
@@ -101,9 +109,58 @@ The **Websites** page lists every **Hosted Site**: a website served from the Hos
 
 A Hosted Site from a label is linked to its Container, so "the site is down and its Container is restarting" shows as one problem, on both the Websites page and the Container's detail view.
 
-Every check is one `GET` that does not follow redirects. A response below 500 is **up** (a 401 or a redirect is up), slower than `LOOKOUT_SITE_SLOW_MS` is **slow**, and a 5xx, timeout, refused connection, DNS error or TLS error is **down**. For `https` sites the certificate's expiry, issuer and hostname are checked as well. A short-lived certificate, one whose whole lifetime is under about six weeks (Caddy's local CA issues 12-hour ones, and Let's Encrypt offers 6-day ones), is judged by its lifetime rather than the days: amber with a third of it left, when it should already have been renewed, and red with a sixth left. So a certificate that renews itself is never Flagged just for being short-lived. Down sites and certificates at red are **Flagged** and sorted first, and the header shows `Sites: 6 up · 1 down` on every page. **Check now** rechecks one site straight away. Results are kept in memory only, like the sparklines.
+Every check is one `GET` that does not follow redirects. A response below 500 is **up** (a 401 or a redirect is up), slower than `LOOKOUT_SITE_SLOW_MS` is **slow**, and a 5xx, timeout, refused connection, DNS error or TLS error is **down**. For `https` sites the certificate's expiry, issuer and hostname are checked as well. A short-lived certificate, one whose whole lifetime is under about six weeks (Caddy's local CA issues 12-hour ones, and Let's Encrypt offers 6-day ones), is judged by its lifetime rather than the days: amber with a third of it left, when it should already have been renewed, and red with a sixth left. So a certificate that renews itself is never Flagged just for being short-lived. Down sites and certificates at red are **Flagged** and sorted first, and the header shows `Sites: 6 up · 1 down` on every page. **Check now** rechecks one site straight away. The latest results are kept in memory, like the sparklines; [Site Stats](#site-stats) keep daily uptime totals.
 
 **Checks connect to the Host itself** (`127.0.0.1`), sending the site's hostname in the request and the TLS handshake, so they work without hairpin NAT or split DNS ([ADR-0010](docs/architectural-decision-record/0010-hosted-sites-checked-from-the-host.md)). That means they cannot see DNS or port-forwarding faults outside the Host. To check a Container's sites through their public URL instead, label it `lookout.check: public`. Lookout never sends alerts; it is a dashboard.
+
+## Site Stats
+
+Each row on the **Websites** page shows today's visitors and a 7-day sparkline, and its **Stats** link opens that Hosted Site's **Site Stats** page. It has Widgets you can arrange like any other, with a 24 hours / 7 / 30 / 90 days switch (hourly points for 24 hours, daily ones otherwise):
+
+- visitors, page views and requests, people and bots, and status codes (2xx, 3xx, 4xx and 5xx);
+- response time (p50 and p95), and the top 10 pages and referrer domains;
+- uptime and latency, from the checks Lookout already runs, and how many days the certificate has left;
+- disk and Docker space over 90 days, with **Measure now**, and the Compose Project's Containers.
+
+Totals are kept by hour for 48 hours and by day for `LOOKOUT_STATS_RETENTION_DAYS`, in `stats.db` in `LOOKOUT_DATA_DIR`. Only counts and sizes are stored, never an IP address ([ADR-0013](docs/architectural-decision-record/0013-daily-stats-history-on-disk.md)).
+
+**Visitors come from your reverse proxy's access logs** ([ADR-0014](docs/architectural-decision-record/0014-visitor-stats-from-access-logs.md)). Caddy's JSON format is supported today.
+
+- **Visitor:** a distinct client address among people, with an IPv6 /64 counting as one.
+- **Page view:** a successful `GET` answered with HTML.
+- **Bots:** told apart by user agent and counted separately. Lookout's own checks are never counted.
+- **Top pages:** kept without their query strings.
+
+Behind a Cloudflare tunnel, the visitor's address is taken from `CF-Connecting-IP`, but only when the request reached Caddy from loopback, where `cloudflared` connects from.
+
+Give every site block a `log` that writes JSON to a file Lookout can read (it runs as UID 65532), for example in a snippet each site imports:
+
+```caddyfile
+(access_log) {
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50MiB
+			roll_keep_for 168h
+			mode 644
+		}
+		format json
+	}
+}
+
+shop.example.com {
+	import access_log
+	reverse_proxy 127.0.0.1:3000
+}
+```
+
+If Caddy runs in a Container, bind-mount the Host's `/var/log/caddy` into it (`- /var/log/caddy:/var/log/caddy`) so the file is on the Host. Then set `LOOKOUT_ACCESS_LOGS=/host/var/log/caddy/*.log`. Lookout follows the files as they grow, carries on where it left off after a restart, and copes with Caddy rotating them. The raw logs hold IP addresses, so keep them only as long as you need: `roll_keep_for 168h` keeps 7 days.
+
+**Sizes** are measured daily at 03:00 (server time) and when you press **Measure now**.
+
+- **A site with a Container:** its Compose Project's named volumes, the Images its Containers run, and their writable layers. Link a site to its Container with a `lookout.url` label, or a Traefik label.
+- **A site without one,** such as a static file server: give its `LOOKOUT_SITES` entry the folder it serves, `https://cdn.example.com=/srv/cdn`. The folder is walked read-only through `/host`, like Largest folders.
+
+The Host page's **Docker disk** Widget shows images, Containers, volumes and build cache, each with how much `docker system prune` could reclaim. Lookout only measures: it never prunes or deletes anything.
 
 ## Changing the password
 
@@ -122,6 +179,11 @@ Lookout is built for one person watching their own server over a private network
 - **Running as non-root.** The Image runs as the unprivileged `lookout` user, UID and GID 65532, a user no Host account uses, with only the Docker socket's group added. Through the read-only `/host` mount it can read only what any user on the Host may, never your own home (`~/.ssh`, `~/.docker`). `compose.yaml` also drops every capability, forbids new privileges, makes Lookout's filesystem read-only (except the `lookout-data` volume, which holds only a password hash chosen in Settings) and caps its memory at 256 MiB. That keeps a bug in Lookout from running as root inside its Container or reading your files, but it does **not** make Docker access any less root-equivalent. If a filesystem's mount point is only readable by root, its disk space is not shown, and folders only root or their owner may list are left out of Largest folders: that is the price of not reading what is not Lookout's to read. Do not run Lookout as root.
 - **Lookout warns about a public bind address.** If `LOOKOUT_BIND_ADDRESS` is `0.0.0.0`, `::` or an address that is not loopback, private (RFC 1918 or IPv6 ULA), link-local or Tailscale's (`100.64.0.0/10`), Lookout logs a warning naming it at start.
 - **Hosted Site checks.** URLs come only from `LOOKOUT_SITES` and Container labels; nothing in the UI or API takes a URL. A label may come from whoever published the Image, not from you, so a label URL is checked at the Host only on port 80, 443 or a port its Container publishes, a `lookout.check: public` check never connects to a private, loopback or cloud-metadata address, and one Container's labels name at most 20 Hosted Sites, after every `LOOKOUT_SITES` entry. List any other URL in `LOOKOUT_SITES`. Response bodies are never read, and TLS verification is never turned off ([v1.1 security review](docs/security-review-v1.1.md), [ADR-0010](docs/architectural-decision-record/0010-hosted-sites-checked-from-the-host.md)).
+- **Site Stats.**
+  - **Stored:** only counts and sizes, in `stats.db` in `LOOKOUT_DATA_DIR`. Client IP addresses are held in memory for the current hour and day only. Paths are kept without their query strings, and referrers as their domain.
+  - **Access logs:** opened read-only through `/host`, never through a link that leads outside it. Over-long or malformed lines are skipped, and at most 200 hosts are counted a day.
+  - **`CF-Connecting-IP`:** believed only from loopback, so nobody else can make up visitors with it.
+  - **Measure now:** only reads (Docker's `/system/df` and an lstat walk of a site's folder) and never prunes. It runs one at a time, behind the same session and `Origin` checks as every other action ([v1.2 security review](docs/security-review-v1.2.md)).
 - The [v1 security review](docs/security-review-v1.md) lists every check and its test. Please report vulnerabilities privately through [GitHub's security advisories](https://github.com/adrianeyre/lookout/security/advisories/new), not in a public issue.
 
 ### Narrowing Docker access
@@ -258,7 +320,7 @@ The workspace has three packages: `apps/web` (Vite + React SPA), `apps/server` (
 - [Product requirements](docs/product-requirements-document/lookout.md)
 - [Architectural decision records](docs/architectural-decision-record/)
 - [Glossary](GLOSSARY.md)
-- [v1 security review](docs/security-review-v1.md)
+- [v1 security review](docs/security-review-v1.md), [v1.1](docs/security-review-v1.1.md) and [v1.2](docs/security-review-v1.2.md)
 
 ## Licence
 

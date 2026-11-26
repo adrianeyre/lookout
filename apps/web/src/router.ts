@@ -5,6 +5,7 @@ export type Route =
   | { name: 'containers' }
   | { name: 'container'; id: string }
   | { name: 'websites' }
+  | { name: 'site'; id: string }
   | { name: 'settings' }
   | { name: 'login' };
 
@@ -23,6 +24,11 @@ export function containerPath(id: string): string {
   return `/containers/${encodeURIComponent(id)}`;
 }
 
+/** The Site Stats page of one Hosted Site, by its ID. */
+export function sitePath(id: string): string {
+  return `/websites/${encodeURIComponent(id)}`;
+}
+
 export function routeFor(pathname: string): Route | null {
   const path = pathname.replace(/\/+$/, '') || '/';
   if (path === '/') return { name: 'host' };
@@ -34,6 +40,14 @@ export function routeFor(pathname: string): Route | null {
   if (container) {
     try {
       return { name: 'container', id: decodeURIComponent(container[1]!) };
+    } catch {
+      return null;
+    }
+  }
+  const site = /^\/websites\/([^/]+)$/.exec(path);
+  if (site) {
+    try {
+      return { name: 'site', id: decodeURIComponent(site[1]!) };
     } catch {
       return null;
     }

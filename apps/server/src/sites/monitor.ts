@@ -12,6 +12,8 @@ import { checkSite, type SiteChecker } from './check.ts';
 import { discoverSites, type SiteTarget } from './discovery.ts';
 
 type Listener = (snapshot: SitesSnapshot) => void;
+/** Told of every check that ran (never a refused Hosted Site's), for Site Stats' uptime. */
+type CheckListener = (siteId: string, check: SiteCheck) => void;
 
 export interface MonitorLogger {
   debug(obj: unknown, msg: string): void;
@@ -71,6 +73,7 @@ export class SiteMonitor {
   readonly #options: Required<Omit<SiteMonitorOptions, 'ca'>> & { ca?: string[] };
   readonly #sites = new Map<string, SiteState>();
   readonly #listeners = new Set<Listener>();
+  readonly #checkListeners = new Set<CheckListener>();
   readonly #loggedSkips = new Set<string>();
   readonly settings: SitesSettings;
   #running = false;
@@ -111,6 +114,11 @@ export class SiteMonitor {
   subscribe(listener: Listener): () => void {
     this.#listeners.add(listener);
     return () => this.#listeners.delete(listener);
+  }
+
+  subscribeChecks(listener: CheckListener): () => void {
+    this.#checkListeners.add(listener);
+    return () => this.#checkListeners.delete(listener);
   }
 
   /**
@@ -278,7 +286,10 @@ export class SiteMonitor {
             tls: null,
           }));
         // The Hosted Site may have gone while it was checked.
-        if (this.#sites.get(state.target.id) === state) this.#record(state, check);
+        if (this.#sites.get(state.target.id) === state) {
+          this.#record(state, check);
+          for (const listener of this.#checkListeners) listener(state.target.id, check);
+        }
       } finally {
         this.#release();
       }

@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, partly superseded by ADR-0013
 ---
 
 # Live metrics only: no persisted history
@@ -9,3 +9,5 @@ status: accepted
 ## Consequences
 
 Lookout cannot answer "what happened overnight?". If history is needed later, prefer exporting to an existing time-series stack (Prometheus/Grafana) before adding storage to Lookout. That decision would supersede this ADR.
+
+_Amended 26 November 2026:_ [ADR-0013](./0013-daily-stats-history-on-disk.md) keeps hourly and daily totals for **Site Stats** (visitors, uptime, disk and Docker space) in `LOOKOUT_DATA_DIR`. Host Metrics are unchanged: they live only in the Live Window, as above.

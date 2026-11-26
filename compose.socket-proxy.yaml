@@ -4,9 +4,9 @@
 #   docker compose -f compose.yaml -f compose.socket-proxy.yaml up -d
 #
 # Lookout itself then has no access to /var/run/docker.sock. Through the proxy it can list,
-# inspect and watch Containers, read their logs and stats, and start, stop, restart and
-# remove them, and nothing else: no exec, no create (so no host mounts), no pull, no
-# images, volumes, networks, secrets or swarm. Needs Docker Compose 2.24 or later.
+# inspect and watch Containers, read their logs and stats, read Docker's disk usage (for Site
+# Stats), and start, stop, restart and remove them, and nothing else: no exec, no create (so no
+# host mounts), no pull, no changes to images, volumes, networks, secrets or swarm. Needs Docker Compose 2.24 or later.
 #
 # The proxy listens on a Unix socket in a volume only it and Lookout mount (#101), never on
 # a TCP port: on the Host's loopback any local user or host-network Container could use it,
@@ -46,7 +46,7 @@ services:
       # an optional /v1.NN API version prefix is allowed. The proxy never sees the query, so
       # it cannot refuse remove's force=true or v=true: only Lookout's code sends
       # force=false&v=false. ADR-0011 accepts that, with its end date (#102).
-      - -allowGET=(/v1\.[0-9]+)?/(_ping|events|containers/json|containers/[a-zA-Z0-9][a-zA-Z0-9_.-]*/(json|logs|stats)|images/[^/]+/json)
+      - -allowGET=(/v1\.[0-9]+)?/(_ping|events|containers/json|containers/[a-zA-Z0-9][a-zA-Z0-9_.-]*/(json|logs|stats)|images/[^/]+/json|system/df)
       - -allowPOST=(/v1\.[0-9]+)?/containers/[a-zA-Z0-9][a-zA-Z0-9_.-]*/(start|stop|restart)
       - -allowDELETE=(/v1\.[0-9]+)?/containers/[a-zA-Z0-9][a-zA-Z0-9_.-]*
     volumes:

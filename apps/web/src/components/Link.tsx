@@ -7,11 +7,13 @@ export function Link({
   children,
   className,
   current,
+  testId,
 }: {
   href: string;
   children: ReactNode;
   className?: string;
   current?: boolean;
+  testId?: string;
 }) {
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
@@ -26,6 +28,7 @@ export function Link({
       onClick={onClick}
       className={className}
       aria-current={current ? 'page' : undefined}
+      data-testid={testId}
     >
       {children}
     </a>

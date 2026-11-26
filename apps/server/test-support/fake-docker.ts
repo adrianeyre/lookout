@@ -1,6 +1,7 @@
 import { EventEmitter, on } from 'node:events';
 import type { ContainerAction, ContainerEvent, ContainerStats, LogLine } from '@lookout/shared';
 import type { DockerClient, LogOptions } from '../src/docker/client.ts';
+import type { DiskUsageReport } from '../src/docker/disk-usage.ts';
 import { EngineError } from '../src/docker/engine.ts';
 import type { InspectedContainer } from '../src/docker/parse.ts';
 
@@ -170,6 +171,48 @@ export class FakeDocker implements DockerClient {
       },
       'restart',
     );
+  }
+
+  /** Set to answer diskUsage with this report; null makes one up from the Containers. */
+  diskUsageReport: DiskUsageReport | null = null;
+  /** How long diskUsage takes, so a test can see "Measure now" running. */
+  diskUsageDelayMs = 0;
+  diskUsageCalls = 0;
+
+  /**
+   * Docker's disk usage. Unless a report is set, each Image is 100 MB, each Container's
+   * writable layer 1 MB, and each Compose Project has a 50 MB "<project>_data" volume.
+   */
+  async diskUsage(): Promise<DiskUsageReport> {
+    this.#assertAvailable();
+    this.diskUsageCalls += 1;
+    if (this.diskUsageDelayMs > 0) await new Promise((r) => setTimeout(r, this.diskUsageDelayMs));
+    if (this.diskUsageReport) return structuredClone(this.diskUsageReport);
+    const containers = [...this.#containers.values()];
+    const images = new Map<string, number>();
+    for (const c of containers) images.set(c.imageId, (images.get(c.imageId) ?? 0) + 1);
+    const projects = [
+      ...new Set(containers.flatMap((c) => (c.composeProject ? [c.composeProject] : []))),
+    ];
+    return {
+      images: [...images].map(([id, count]) => ({ id, bytes: 100_000_000, containers: count })),
+      containers: containers.map((c) => ({
+        id: c.id,
+        name: c.name,
+        imageId: c.imageId,
+        writableBytes: 1_000_000,
+        running: c.state === 'running',
+        project: c.composeProject,
+        volumes: c.composeProject ? [`${c.composeProject}_data`] : [],
+      })),
+      volumes: projects.map((project) => ({
+        name: `${project}_data`,
+        bytes: 50_000_000,
+        refCount: 1,
+        project,
+      })),
+      buildCache: [{ bytes: 20_000_000, inUse: false, shared: false }],
+    };
   }
 
   async removeContainer(id: string): Promise<void> {

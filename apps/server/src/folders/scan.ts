@@ -68,6 +68,8 @@ export function pickHeaviest(candidates: readonly Candidate[], count = FOLDER_CO
 
 export interface WalkResult {
   candidates: Candidate[];
+  /** Disk space the whole walk counted, in bytes (the starting folder's own blocks excluded). */
+  bytes: number;
   walked: number;
   unreadable: number;
   /** True if the walk stopped at, or went past, one of its limits. */
@@ -158,8 +160,18 @@ async function openDirectory(target: string): Promise<FileHandle | 'link' | 'unr
 export async function walkFilesystem(
   realPath: string,
   hostPath: string,
-  options: { onFolder?: () => void; signal?: AbortSignal; budget?: ScanBudget } = {},
+  options: {
+    onFolder?: () => void;
+    signal?: AbortSignal;
+    budget?: ScanBudget;
+    /**
+     * Skip /proc, /sys, /dev and /run directly under the start, as at a filesystem's root
+     * (the default). Sizing one site's folder (Site Stats) walks all of it.
+     */
+    skipKernelFolders?: boolean;
+  } = {},
 ): Promise<WalkResult> {
+  const skipKernel = options.skipKernelFolders ?? true;
   const budget = options.budget ?? new ScanBudget();
   const heaviest = new Heaviest(CANDIDATES);
   const result = { walked: 0, unreadable: 0 };
@@ -168,7 +180,7 @@ export async function walkFilesystem(
   const root = await lstat(realPath);
   // A mount point that is itself a link would be walked wherever it points (#110).
   if (root.isSymbolicLink() || !root.isDirectory() || isPrivateFolder(hostPath)) {
-    return { candidates: [], ...result, partial: budget.partial };
+    return { candidates: [], bytes: 0, ...result, partial: budget.partial };
   }
 
   const visit = async (
@@ -207,7 +219,7 @@ export async function walkFilesystem(
           sinceYield = 0;
           await yieldToLoop();
         }
-        if (depth === 0 && SKIP_AT_ROOT.has(entry.name)) continue;
+        if (skipKernel && depth === 0 && SKIP_AT_ROOT.has(entry.name)) continue;
         const childHost = host === '/' ? `/${entry.name}` : `${host}/${entry.name}`;
         if (isPrivateFolder(childHost)) continue;
         const childReal = path.join(base, entry.name);
@@ -252,8 +264,8 @@ export async function walkFilesystem(
   };
 
   // Stopping early already marked the budget partial (ScanBudget.take).
-  await visit(realPath, hostPath, root, 0);
-  return { candidates: heaviest.items, ...result, partial: budget.partial };
+  const bytes = await visit(realPath, hostPath, root, 0);
+  return { candidates: heaviest.items, bytes, ...result, partial: budget.partial };
 }
 
 export interface FolderScannerOptions {

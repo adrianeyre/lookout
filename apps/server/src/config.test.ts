@@ -24,6 +24,9 @@ describe('loadConfig', () => {
       hostnames: [],
       secureCookie: false,
       sites: [],
+      siteFolders: {},
+      accessLogs: null,
+      statsRetentionDays: 90,
       siteCheckIntervalMs: 60_000,
       siteTimeoutMs: 10_000,
       siteSlowMs: 2000,
@@ -39,6 +42,52 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...base, LOOKOUT_FOLDER_SCAN_HOURS: '200' })).toThrow(
       'LOOKOUT_FOLDER_SCAN_HOURS',
     );
+  });
+
+  it('reads a folder for a LOOKOUT_SITES entry (Site Stats)', () => {
+    const config = loadConfig({
+      ...base,
+      LOOKOUT_SITES: 'https://cdn.example.com=/srv/cdn/, https://shop.example/?next=%2F',
+    });
+    expect(config.sites).toEqual(['https://cdn.example.com/', 'https://shop.example/?next=%2F']);
+    expect(config.siteFolders).toEqual({ 'https://cdn.example.com/': '/srv/cdn' });
+  });
+
+  it.each([
+    ['https://cdn.example.com=/srv/../etc', 'must not contain ..'],
+    ['https://cdn.example.com=/', 'must not be the whole Host'],
+    ['https://cdn.example.com=/home/me/site', 'which Lookout never reads'],
+    ['https://cdn.example.com=/root', 'which Lookout never reads'],
+  ])('refuses the site folder in %s', (sites, message) => {
+    expect(() => loadConfig({ ...base, LOOKOUT_SITES: sites })).toThrow(message);
+  });
+
+  it('reads LOOKOUT_ACCESS_LOGS, a path under the Host root', () => {
+    expect(
+      loadConfig({ ...base, LOOKOUT_ACCESS_LOGS: '/host/var/log/caddy/*.log' }).accessLogs,
+    ).toBe('/host/var/log/caddy/*.log');
+  });
+
+  it.each([
+    ['var/log/caddy/*.log', 'must be an absolute path'],
+    ['/var/log/caddy/*.log', 'must be under LOOKOUT_HOST_ROOT'],
+    ['/host/var/log/../../etc/shadow', 'must not contain ..'],
+    ['/host/var/log/*/access.log', 'may only use * and ? in the file name'],
+    ['/host/var/log/caddy/[ab].log', 'may only use * and ? as wildcards'],
+  ])('refuses LOOKOUT_ACCESS_LOGS=%s', (value, message) => {
+    expect(() => loadConfig({ ...base, LOOKOUT_ACCESS_LOGS: value })).toThrow(message);
+  });
+
+  it('reads LOOKOUT_STATS_RETENTION_DAYS from 7 to 365', () => {
+    expect(loadConfig({ ...base, LOOKOUT_STATS_RETENTION_DAYS: '7' }).statsRetentionDays).toBe(7);
+    expect(loadConfig({ ...base, LOOKOUT_STATS_RETENTION_DAYS: '365' }).statsRetentionDays).toBe(
+      365,
+    );
+    for (const value of ['6', '366', 'ninety']) {
+      expect(() => loadConfig({ ...base, LOOKOUT_STATS_RETENTION_DAYS: value })).toThrow(
+        'LOOKOUT_STATS_RETENTION_DAYS must be a whole number from 7 to 365',
+      );
+    }
   });
 
   it('reads the Hosted Site settings', () => {
