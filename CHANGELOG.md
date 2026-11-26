@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/adrianeyre/lookout/compare/v1.1.0...v1.2.0) (2026-11-26)
+
+### Features
+
+* **stats:** site stats store, access-log visitors, uptime history and sizes ([035ec11](https://github.com/adrianeyre/lookout/commit/035ec11134bfb5880d74565225164da50df8a6c8)), closes [#6](https://github.com/adrianeyre/lookout/issues/6) [#7](https://github.com/adrianeyre/lookout/issues/7) [#8](https://github.com/adrianeyre/lookout/issues/8) [#9](https://github.com/adrianeyre/lookout/issues/9)
+* **web:** Site Stats page, visitors on Websites and a Docker disk card ([19cb794](https://github.com/adrianeyre/lookout/commit/19cb794419ab844b291ab8b1b650a34cd889b3cf)), closes [#10](https://github.com/adrianeyre/lookout/issues/10) [#11](https://github.com/adrianeyre/lookout/issues/11)
+
 ## [1.1.0](https://github.com/adrianeyre/lookout/compare/v1.0.0...v1.1.0) (2026-11-26)
 
 ### Features
