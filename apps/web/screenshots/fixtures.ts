@@ -14,8 +14,14 @@ import type {
   FolderScan,
   HostedSite,
   LogLine,
+  DockerVolume,
+  SiteStats,
   SitesSnapshot,
+  StatsOverview,
+  StatsRange,
   TlsCertificate,
+  TrafficPoint,
+  VolumesSnapshot,
   WindowPoint,
 } from '@lookout/shared';
 
@@ -446,4 +452,216 @@ export const FOLDERS: FolderScan = {
   partial: false,
   error: null,
   nextAt: NOW + 4 * HOUR,
+};
+
+/** A fixed wobble from 0 to 1 for point `i`, so made-up series look lived-in but never change. */
+const wobble = (i: number, seed = 1) =>
+  (Math.sin(i * 1.7 + seed) + Math.sin(i * 0.37 + seed * 2) + 2) / 4;
+
+const dayStart = (ts: number) => {
+  const date = new Date(ts);
+  date.setUTCHours(0, 0, 0, 0);
+  return date.getTime();
+};
+const hourStart = (ts: number) => ts - (ts % HOUR);
+
+/** The Site Stats page's site: notes.example.net, served by the notes Compose Project. */
+export const STATS_SITE_ID = 'notesexamplenet';
+
+function trafficPoint(start: number, i: number, scale: number): TrafficPoint {
+  // Busier on weekdays and in the afternoon, like a real site.
+  const day = new Date(start).getUTCDay();
+  const weekday = day === 0 || day === 6 ? 0.6 : 1;
+  const visitors = Math.round(scale * weekday * (0.55 + 0.45 * wobble(i)));
+  const pageViews = Math.round(visitors * (2.6 + wobble(i, 3)));
+  const bots = Math.round(visitors * (0.4 + 0.5 * wobble(i, 5)));
+  const requests = pageViews * 4 + bots;
+  return {
+    start,
+    requests,
+    bots,
+    visitors,
+    pageViews,
+    status: {
+      '2xx': Math.round(requests * 0.9),
+      '3xx': Math.round(requests * 0.06),
+      '4xx': Math.round(requests * 0.035),
+      '5xx': i % 9 === 4 ? Math.max(1, Math.round(requests * 0.01)) : 0,
+    },
+    p50Ms: Math.round(38 + 14 * wobble(i, 7)),
+    p95Ms: Math.round(140 + 90 * wobble(i, 9)),
+  };
+}
+
+function starts(range: StatsRange): number[] {
+  const count = { '24h': 24, '7d': 7, '30d': 30, '90d': 90 }[range];
+  const step = range === '24h' ? HOUR : DAY;
+  const last = range === '24h' ? hourStart(NOW) : dayStart(NOW);
+  return Array.from({ length: count }, (_, i) => last - (count - 1 - i) * step);
+}
+
+/** notes.example.net's Site Stats for each range. */
+export function siteStats(range: StatsRange): SiteStats {
+  const points = starts(range);
+  const hourly = range === '24h';
+  const traffic = points.map((start, i) =>
+    trafficPoint(start, i + (hourly ? 0 : 3), hourly ? 22 * (0.4 + wobble(i, 11)) : 310),
+  );
+  return {
+    siteId: STATS_SITE_ID,
+    url: 'https://notes.example.net/',
+    range,
+    bucket: hourly ? 'hour' : 'day',
+    traffic: { source: 'ok', points: traffic },
+    topPages: [
+      ['/', 4120],
+      ['/login', 2210],
+      ['/notes', 1985],
+      ['/search', 940],
+      ['/notes/shared', 610],
+      ['/settings', 402],
+      ['/help/markdown', 288],
+      ['/export', 141],
+      ['/about', 96],
+      ['/privacy', 54],
+    ].map(([key, count]) => ({ key: key as string, count: count as number })),
+    topReferrers: [
+      ['search.example', 812],
+      ['news.example.org', 344],
+      ['forum.example.com', 129],
+      ['mail.example', 88],
+      ['social.example', 61],
+    ].map(([key, count]) => ({ key: key as string, count: count as number })),
+    uptime: points.map((start, i) => {
+      const checks = hourly ? 60 : 1440;
+      const down = i % 11 === 6 ? (hourly ? 2 : 9) : 0;
+      return {
+        start,
+        checks,
+        up: checks - down,
+        uptimePercent: Math.round(((checks - down) / checks) * 10_000) / 100,
+        p50Ms: Math.round(42 + 10 * wobble(i, 13)),
+        p95Ms: Math.round(120 + 60 * wobble(i, 15)),
+      };
+    }),
+    tlsValidTo: NOW + 61 * DAY,
+    sizes: {
+      source: 'project',
+      subject: 'notes',
+      points: starts('90d').map((start, i) => ({
+        start,
+        measuredAt: start + 3 * HOUR,
+        volumesBytes: Math.round((1.1 + i * 0.012) * GiB),
+        imagesBytes: Math.round((i < 60 ? 820 : 870) * MiB),
+        writableBytes: Math.round((14 + 6 * wobble(i, 17)) * MiB),
+        folderBytes: null,
+      })),
+    },
+  };
+}
+
+/** notes.example.net's visitors over the last 7 days, as its Site Stats page shows them. */
+const NOTES_WEEK = siteStats('7d').traffic.points.map((p) => p.visitors);
+
+/** The Websites list's visitor figures and the Host page's Docker disk Widget. */
+export const STATS_OVERVIEW: StatsOverview = {
+  available: true,
+  error: null,
+  persistent: true,
+  retentionDays: 90,
+  accessLogs: true,
+  sites: {
+    notesexamplenet: {
+      todayVisitors: NOTES_WEEK.at(-1)!,
+      last7Days: NOTES_WEEK,
+    },
+    searchexamplene: { todayVisitors: 41, last7Days: [52, 61, 48, 57, 44, 39, 41] },
+    photosexamplene: { todayVisitors: 17, last7Days: [9, 12, 14, 11, 19, 22, 17] },
+    http19216801080: { todayVisitors: 0, last7Days: [0, 0, 0, 0, 0, 0, 0] },
+  },
+  measure: { state: 'idle', lastMeasuredAt: dayStart(NOW) + 3 * HOUR, error: null },
+  docker: {
+    latest: {
+      measuredAt: dayStart(NOW) + 3 * HOUR,
+      images: { count: 14, bytes: Math.round(6.4 * GiB), reclaimableBytes: Math.round(1.2 * GiB) },
+      containers: {
+        count: 9,
+        bytes: Math.round(180 * MiB),
+        reclaimableBytes: Math.round(22 * MiB),
+      },
+      volumes: { count: 11, bytes: Math.round(9.7 * GiB), reclaimableBytes: Math.round(2.1 * GiB) },
+      buildCache: {
+        count: 38,
+        bytes: Math.round(3.3 * GiB),
+        reclaimableBytes: Math.round(2.6 * GiB),
+      },
+    },
+    points: starts('90d').map((start, i) => ({
+      start,
+      imagesBytes: Math.round((5.6 + i * 0.009) * GiB),
+      containersBytes: Math.round((150 + i * 0.3) * MiB),
+      volumesBytes: Math.round((8.2 + i * 0.017) * GiB),
+      buildCacheBytes: Math.round((1 + (i % 30) * 0.08) * GiB),
+    })),
+  },
+};
+
+const use = (
+  containerId: string,
+  containerName: string,
+  destination: string,
+  readOnly = false,
+) => ({
+  containerId,
+  containerName,
+  destination,
+  readOnly,
+});
+
+const vol = (
+  name: string,
+  project: string | null,
+  sizeBytes: number,
+  usedBy: DockerVolume['usedBy'],
+  createdDaysAgo = 40,
+): DockerVolume => ({
+  name,
+  driver: 'local',
+  createdAt: NOW - createdDaysAgo * DAY,
+  project,
+  sizeBytes,
+  usedBy,
+});
+
+/** Docker's volumes: those the fixture Containers use, and three unused ones. */
+export const VOLUMES: VolumesSnapshot = {
+  sizesMeasuredAt: NOW - 4 * MINUTE,
+  volumes: [
+    vol('notes_db', 'notes', Math.round(1.6 * GiB), [
+      use('8d0e6b1f2c44', 'notes-db-1', '/var/lib/postgresql/data'),
+    ]),
+    vol('notes_uploads', 'notes', Math.round(640 * MiB), [
+      use('4f1c2a9b7e30', 'notes-app-1', '/app/uploads'),
+    ]),
+    vol('notes_search', 'notes', Math.round(310 * MiB), [
+      use('2b7a9c0d5e18', 'notes-search-1', '/var/lib/meilisearch'),
+    ]),
+    vol('photos_library', 'photos', Math.round(5.2 * GiB), [
+      use('a3c5e7f90b12', 'photos-server-1', '/photos'),
+      use('c9d1e3f50a77', 'photos-ml-1', '/photos', true),
+    ]),
+    vol('photos_model-cache', 'photos', Math.round(1.1 * GiB), [
+      use('c9d1e3f50a77', 'photos-ml-1', '/cache'),
+    ]),
+    vol('lookout-data', 'lookout', 96 * 1024, [use('f0e1d2c3b4a5', 'lookout', '/data')]),
+    vol('wiki_db', 'wiki', Math.round(420 * MiB), [], 120),
+    vol('photos_old-thumbs', 'photos', Math.round(1.3 * GiB), [], 75),
+    vol(
+      '3f9a1c7e5b2d8f0a6c4e1b9d7f3a5c2e8b0d6f4a1c9e7b5d3f1a8c6e4b2d0f9a',
+      null,
+      Math.round(48 * MiB),
+      [],
+      12,
+    ),
+  ],
 };

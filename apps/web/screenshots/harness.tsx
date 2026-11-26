@@ -3,7 +3,7 @@
  * screenshots (PRD WEB-6). There is no server behind it: the live stream, the page-scoped
  * streams and the API are all answered here, so it cannot show a real Host or Container.
  *
- * Open /screenshots/index.html?page=host|containers|detail|websites|settings under Vite (`pnpm screenshots`
+ * Open /screenshots/index.html?page=host|containers|detail|websites|site|settings under Vite (`pnpm screenshots`
  * does this).
  */
 import { StrictMode, useState } from 'react';
@@ -14,6 +14,7 @@ import { ContainerDetailPage } from '../src/pages/ContainerDetailPage.tsx';
 import { ContainersPage } from '../src/pages/ContainersPage.tsx';
 import { HostPage } from '../src/pages/HostPage.tsx';
 import { SettingsPage } from '../src/pages/SettingsPage.tsx';
+import { SiteStatsPage } from '../src/pages/SiteStatsPage.tsx';
 import { WebsitesPage } from '../src/pages/WebsitesPage.tsx';
 import '../src/styles.css';
 import {
@@ -26,7 +27,11 @@ import {
   SITES,
   SNAPSHOT,
   STATS,
+  STATS_OVERVIEW,
+  STATS_SITE_ID,
+  VOLUMES,
   WINDOW,
+  siteStats,
 } from './fixtures.ts';
 
 /** An EventSource that replays fixture events for its URL, then stays open. */
@@ -76,19 +81,30 @@ function eventsFor(url: string): [string, unknown][] {
 
 const createEventSource = (url: string) => new FixtureEventSource(url) as unknown as EventSource;
 
-// The detail view's one fetch; everything else is refused, so nothing leaves the page.
+// The API calls the pages make, answered from fixtures; everything else is refused, so
+// nothing leaves the page.
 window.fetch = async (input) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  if (url === `/api/containers/${DETAIL_ID}`) {
-    return new Response(JSON.stringify(DETAIL), { status: 200 });
-  }
+  const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
+  if (url === `/api/containers/${DETAIL_ID}`) return json(DETAIL);
+  if (url === '/api/stats') return json(STATS_OVERVIEW);
+  if (url === '/api/volumes') return json(VOLUMES);
+  const stats = /^\/api\/stats\/sites\/([^?]+)\?range=(24h|7d|30d|90d)$/.exec(url);
+  if (stats && stats[1] === STATS_SITE_ID) return json(siteStats(stats[2] as '24h'));
   return new Response(JSON.stringify({ error: 'Not available in the screenshot harness' }), {
     status: 404,
   });
 };
 
-type HarnessPage = 'host' | 'containers' | 'detail' | 'websites' | 'settings';
-const PAGES: readonly HarnessPage[] = ['host', 'containers', 'detail', 'websites', 'settings'];
+type HarnessPage = 'host' | 'containers' | 'detail' | 'websites' | 'site' | 'settings';
+const PAGES: readonly HarnessPage[] = [
+  'host',
+  'containers',
+  'detail',
+  'websites',
+  'site',
+  'settings',
+];
 
 function Harness({ page }: { page: HarnessPage }) {
   const [client] = useState(() => {
@@ -104,6 +120,7 @@ function Harness({ page }: { page: HarnessPage }) {
           {page === 'containers' && <ContainersPage />}
           {page === 'detail' && <ContainerDetailPage id={DETAIL_ID} />}
           {page === 'websites' && <WebsitesPage />}
+          {page === 'site' && <SiteStatsPage id={STATS_SITE_ID} />}
           {page === 'settings' && <SettingsPage />}
         </Layout>
       </EventSourceContext.Provider>

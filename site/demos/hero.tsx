@@ -301,7 +301,7 @@ function Scene({ theme, stopped }: { theme: Theme; stopped: boolean }) {
                   {layout === 'wide' && (
                     <span className="lk-nav">
                       <span>Host</span>
-                      <span data-current="">Containers</span>
+                      <span data-current="">Docker</span>
                     </span>
                   )}
                   <Summary s={s} />
