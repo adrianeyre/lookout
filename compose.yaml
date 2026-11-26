@@ -7,7 +7,7 @@ services:
   lookout:
     # Pin a minor version (X.Y) to get fixes without surprises; change it to upgrade.
     # :latest follows every release and :edge follows main.
-    image: ghcr.io/adrianeyre/lookout:1.0
+    image: ghcr.io/adrianeyre/lookout:1.3
     container_name: lookout
     restart: unless-stopped
     network_mode: host
