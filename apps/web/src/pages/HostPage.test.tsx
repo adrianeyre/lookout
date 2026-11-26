@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { MemoryMetrics } from '@lookout/shared';
 import {
+  byTraffic,
   CpuCard,
   DiskCard,
   DiskIoCard,
@@ -184,9 +185,36 @@ describe('NetworkCard', () => {
     // Totals never include virtual interfaces.
     expect(screen.getByTestId('net-rx').textContent).toBe('1.00 KiB/s');
     await userEvent.click(screen.getByLabelText(/Show loopback and veth/));
-    expect(names()).toEqual(['eth0', 'lo', 'veth1a2b']);
+    // Busiest first: lo receives the most.
+    expect(names()).toEqual(['lo', 'eth0', 'veth1a2b']);
     await userEvent.click(screen.getByLabelText(/Show loopback and veth/));
     expect(names()).toEqual(['eth0']);
+  });
+});
+
+describe('byTraffic', () => {
+  const nic = (name: string, rx: number | null, tx: number | null) => ({
+    name,
+    virtual: false,
+    rxBytesPerSecond: rx,
+    txBytesPerSecond: tx,
+  });
+
+  it('puts the highest receive rate first, then the highest transmit rate, then by name', () => {
+    const sorted = byTraffic([
+      nic('eth0', 100, 5),
+      nic('wlan0', 900, 1),
+      nic('eth1', 100, 50),
+      nic('tailscale0', null, null),
+      nic('bond0', 100, 50),
+    ]);
+    expect(sorted.map((n) => n.name)).toEqual(['wlan0', 'bond0', 'eth1', 'eth0', 'tailscale0']);
+  });
+
+  it('leaves the list it was given alone', () => {
+    const given = [nic('a', 1, 1), nic('b', 2, 2)];
+    byTraffic(given);
+    expect(given.map((n) => n.name)).toEqual(['a', 'b']);
   });
 });
 

@@ -60,9 +60,11 @@ services:
     group_add: !reset []
     environment:
       DOCKER_HOST: unix:///run/lookout-docker/docker.sock
-    # The Host's root filesystem, read-only (ADR-0003), and the proxy's socket; not Docker's.
+    # The Host's root filesystem, read-only (ADR-0003), the proxy's socket (not Docker's) and
+    # Lookout's data volume, for a password changed in Settings.
     volumes: !override
       - /:/host:ro,rslave
+      - lookout-data:/data
       - docker-proxy-socket:/run/lookout-docker
 
 volumes:

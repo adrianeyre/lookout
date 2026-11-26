@@ -1,4 +1,5 @@
 import {
+  DAY_MS,
   isSiteFlagged,
   tlsDaysLeft,
   tlsLevel,
@@ -9,6 +10,8 @@ import {
   type TlsThresholds,
 } from '@lookout/shared';
 import { formatAgo } from './format.ts';
+
+const HOUR_MS = 60 * 60 * 1000;
 
 export interface SiteFilters {
   /** Matches the URL or the Container name, case-insensitively. */
@@ -91,11 +94,15 @@ export function tlsSummary(site: HostedSite, now: number, tls: TlsThresholds): T
     return site.last === null ? null : { level: 'ok', text: 'No certificate' };
   const level = tlsLevel(certificate, now, tls);
   const days = tlsDaysLeft(certificate, now);
-  const plural = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
+  const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+  const left = certificate.validTo - now;
+  // A short-lived certificate (Caddy's local CA issues 12-hour ones) is counted in hours.
   const expiry =
-    certificate.validTo <= now
-      ? `Expired ${plural(Math.max(1, -days))} ago`
-      : `Expires in ${plural(days)}`;
+    left <= 0
+      ? `Expired ${plural(Math.max(1, -days), 'day')} ago`
+      : left < DAY_MS
+        ? `Expires in ${plural(Math.ceil(left / HOUR_MS), 'hour')}`
+        : `Expires in ${plural(days, 'day')}`;
   if (!certificate.trusted && certificate.validTo > now) {
     return { level, text: `Not trusted · ${expiry}` };
   }

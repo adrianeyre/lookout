@@ -201,7 +201,7 @@ test.describe('Container detail', () => {
     await expect(page.getByLabel('Timestamps')).toBeChecked();
 
     // Leaving the detail view closes the server's Docker log stream.
-    await page.getByRole('link', { name: '← All Containers' }).click();
+    await page.getByRole('link', { name: 'All Containers' }).click();
     await expect.poll(() => openDockerStreams(E2E_PORT, 'logs')).toBe(0);
   });
 });

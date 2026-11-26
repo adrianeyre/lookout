@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { summary } from '../test-support.ts';
 import { ContainerList } from './ContainersPage.tsx';
 
@@ -56,7 +56,47 @@ function renderList() {
 
 const names = () => screen.queryAllByTestId('container-name').map((el) => el.textContent);
 
+afterEach(() => localStorage.clear());
+
 describe('ContainerList', () => {
+  it('opens and closes each Compose Project from its heading, starting open', async () => {
+    const user = userEvent.setup();
+    renderList();
+    const toggle = screen.getByRole('button', { name: /^shop/ });
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    const shop = screen.getByRole('region', { name: 'shop' });
+    expect(within(shop).getAllByTestId('container-name')).toHaveLength(3);
+
+    await user.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(within(shop).queryAllByRole('listitem')).toHaveLength(0);
+    // The others stay open.
+    const blog = screen.getByRole('region', { name: 'blog' });
+    expect(within(blog).getAllByTestId('container-name')).toHaveLength(1);
+
+    await user.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(within(shop).getAllByTestId('container-name')).toHaveLength(3);
+  });
+
+  it('remembers a closed Compose Project in this browser', async () => {
+    const user = userEvent.setup();
+    const first = render(
+      <ContainerList snapshot={{ available: true, containers }} stats={new Map()} now={NOW} />,
+    );
+    await user.click(screen.getByRole('button', { name: /^blog/ }));
+    first.unmount();
+    render(
+      <ContainerList snapshot={{ available: true, containers }} stats={new Map()} now={NOW} />,
+    );
+    expect(screen.getByRole('button', { name: /^blog/ }).getAttribute('aria-expanded')).toBe(
+      'false',
+    );
+    expect(screen.getByRole('button', { name: /^shop/ }).getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+  });
+
   it('groups by Compose Project with Standalone last', () => {
     renderList();
     expect(screen.getAllByTestId('group-name').map((el) => el.textContent)).toEqual([

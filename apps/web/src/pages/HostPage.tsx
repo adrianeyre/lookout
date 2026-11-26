@@ -246,6 +246,20 @@ export function DiskIoCard({ diskIo, window }: { diskIo: DiskIo[]; window?: Live
   );
 }
 
+/**
+ * Busiest first: by receive rate, then transmit rate, highest at the top, then by name. An
+ * interface with no rate yet (the first sample) goes last.
+ */
+export function byTraffic(interfaces: readonly NetworkInterface[]): NetworkInterface[] {
+  const rate = (value: number | null) => value ?? -1;
+  return [...interfaces].sort(
+    (a, b) =>
+      rate(b.rxBytesPerSecond) - rate(a.rxBytesPerSecond) ||
+      rate(b.txBytesPerSecond) - rate(a.txBytesPerSecond) ||
+      a.name.localeCompare(b.name),
+  );
+}
+
 export function NetworkCard({
   network,
   window,
@@ -254,7 +268,7 @@ export function NetworkCard({
   window?: LiveWindowSnapshot;
 }) {
   const [showVirtual, setShowVirtual] = useState(false);
-  const shown = showVirtual ? network : network.filter((nic) => !nic.virtual);
+  const shown = byTraffic(showVirtual ? network : network.filter((nic) => !nic.virtual));
   const real = network.filter((nic) => !nic.virtual);
   const hidden = network.length - real.length;
   return (

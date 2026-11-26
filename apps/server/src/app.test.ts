@@ -96,6 +96,7 @@ describe('authentication', () => {
         '/api/sites/:id/check',
         '/api/folders',
         '/api/folders/scan',
+        '/api/password',
       ]),
     );
 
@@ -135,7 +136,7 @@ describe('authentication', () => {
     const cookie = await signIn(instance);
     const session = await instance.inject({ url: '/api/session', headers: { cookie } });
     expect(session.statusCode).toBe(200);
-    expect(session.json()).toEqual({ authenticated: true });
+    expect(session.json()).toEqual({ authenticated: true, passwordChangeable: false });
 
     const page = await instance.inject({ url: '/', headers: { cookie } });
     expect(page.statusCode).toBe(200);
@@ -1036,5 +1037,133 @@ describe('largest folders', () => {
     const { instance, cookie } = await startWithHost();
     const response = await scanNow(instance, cookie, 'https://evil.example');
     expect(response.statusCode).toBe(403);
+  });
+});
+
+describe('changing the password in Settings', () => {
+  const NEW_PASSWORD = 'a much better password';
+
+  async function startWithDataDir() {
+    const dataDir = await mkdtemp(path.join(tmpdir(), 'lookout-data-'));
+    const instance = await start({ config: { ...testConfig(), dataDir } });
+    return { instance, dataDir };
+  }
+
+  const change = (instance: FastifyInstance, cookie: string, payload: object) =>
+    instance.inject({
+      method: 'POST',
+      url: '/api/password',
+      headers: { origin: ORIGIN, host: HOST, cookie },
+      payload,
+    });
+
+  it('says whether the password can be changed here', async () => {
+    const { instance } = await startWithDataDir();
+    const cookie = await signIn(instance);
+    const session = await instance.inject({ url: '/api/session', headers: { cookie, host: HOST } });
+    expect(session.json()).toEqual({ authenticated: true, passwordChangeable: true });
+  });
+
+  it('refuses without a data directory, naming the setting', async () => {
+    const instance = await start();
+    const cookie = await signIn(instance);
+    const response = await change(instance, cookie, {
+      currentPassword: TEST_PASSWORD,
+      newPassword: NEW_PASSWORD,
+    });
+    expect(response.statusCode).toBe(409);
+    expect(response.json<{ error: string }>().error).toMatch(/LOOKOUT_DATA_DIR/);
+  });
+
+  it('changes it, keeps it hashed with mode 600, and ends every other session', async () => {
+    const { instance, dataDir } = await startWithDataDir();
+    const other = await signIn(instance);
+    const cookie = await signIn(instance);
+    const response = await change(instance, cookie, {
+      currentPassword: TEST_PASSWORD,
+      newPassword: NEW_PASSWORD,
+    });
+    expect(response.statusCode).toBe(204);
+    const renewed = String(response.headers['set-cookie']).split(';')[0]!;
+
+    // The one who changed it stays signed in; every other session has ended.
+    const mine = await instance.inject({
+      url: '/api/session',
+      headers: { cookie: renewed, host: HOST },
+    });
+    expect(mine.statusCode).toBe(200);
+    for (const old of [other, cookie]) {
+      const gone = await instance.inject({
+        url: '/api/session',
+        headers: { cookie: old, host: HOST },
+      });
+      expect(gone.statusCode).toBe(401);
+    }
+
+    const login = (password: string) =>
+      instance.inject({
+        method: 'POST',
+        url: '/api/login',
+        headers: { origin: ORIGIN, host: HOST },
+        payload: { password },
+      });
+    expect((await login(TEST_PASSWORD)).statusCode).toBe(401);
+    expect((await login(NEW_PASSWORD)).statusCode).toBe(204);
+
+    const file = path.join(dataDir, 'password.json');
+    const saved = readFileSync(file, 'utf8');
+    expect(saved).not.toContain(NEW_PASSWORD);
+    expect(saved).toMatch(/\$argon2id\$/);
+    const { statSync } = await import('node:fs');
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+  });
+
+  it('refuses a wrong current password with 403, counting it against the sign-in limit', async () => {
+    const { instance } = await startWithDataDir();
+    const cookie = await signIn(instance);
+    const response = await change(instance, cookie, {
+      currentPassword: 'not it',
+      newPassword: NEW_PASSWORD,
+    });
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toEqual({ error: 'The current password is incorrect' });
+    for (let i = 0; i < 4; i++) {
+      await change(instance, cookie, { currentPassword: 'not it', newPassword: NEW_PASSWORD });
+    }
+    const limited = await change(instance, cookie, {
+      currentPassword: TEST_PASSWORD,
+      newPassword: NEW_PASSWORD,
+    });
+    expect(limited.statusCode).toBe(429);
+  });
+
+  it('refuses a new password under 8 characters', async () => {
+    const { instance } = await startWithDataDir();
+    const cookie = await signIn(instance);
+    const response = await change(instance, cookie, {
+      currentPassword: TEST_PASSWORD,
+      newPassword: 'short',
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('needs a session and a same-origin request', async () => {
+    const { instance } = await startWithDataDir();
+    const payload = { currentPassword: TEST_PASSWORD, newPassword: NEW_PASSWORD };
+    const anonymous = await instance.inject({
+      method: 'POST',
+      url: '/api/password',
+      headers: { origin: ORIGIN, host: HOST },
+      payload,
+    });
+    expect(anonymous.statusCode).toBe(401);
+    const cookie = await signIn(instance);
+    const crossOrigin = await instance.inject({
+      method: 'POST',
+      url: '/api/password',
+      headers: { origin: 'http://evil.example', host: HOST, cookie },
+      payload,
+    });
+    expect(crossOrigin.statusCode).toBe(403);
   });
 });

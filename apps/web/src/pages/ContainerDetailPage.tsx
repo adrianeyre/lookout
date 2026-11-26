@@ -451,7 +451,9 @@ export function ContainerDetailPage({ id }: { id: string }) {
 
   const back = (
     <p className="back">
-      <Link href={PATHS.containers}>← All Containers</Link>
+      <Link href={PATHS.containers} className="button button--quiet button--back">
+        <span aria-hidden="true">←</span> All Containers
+      </Link>
     </p>
   );
   if (snapshot && !snapshot.available) {

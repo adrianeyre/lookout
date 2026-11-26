@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { tmpdir } from 'node:os';
@@ -82,20 +82,64 @@ export class FakeSite {
   }
 }
 
+/** openssl's time format, as `openssl ca -startdate/-enddate` take it: YYYYMMDDHHMMSSZ. */
+const opensslTime = (ms: number) =>
+  new Date(ms)
+    .toISOString()
+    .replace(/[-:T]/g, '')
+    .replace(/\.\d+Z$/, 'Z');
+
 /**
  * A self-signed certificate for `hostname` that expires in `days` days, made with the
  * openssl CLI (Node cannot create certificates). The certificate is its own trust anchor.
+ *
+ * It was issued `lifetimeDays` before it expires (90 by default, like Let's Encrypt's), so it
+ * is an ordinary certificate near its end rather than a short-lived one, which Lookout judges
+ * by its lifetime instead. `openssl ca` backdates it: `req -not_before` needs OpenSSL 3.4.
  */
-export function makeCertificate(hostname: string, days: number): { key: string; cert: string } {
+export function makeCertificate(
+  hostname: string,
+  days: number,
+  lifetimeDays = 90,
+): { key: string; cert: string } {
   const dir = mkdtempSync(path.join(tmpdir(), 'lookout-cert-'));
   try {
     const key = path.join(dir, 'key.pem');
+    const csr = path.join(dir, 'cert.csr');
     const cert = path.join(dir, 'cert.pem');
+    const config = path.join(dir, 'ca.cnf');
+    writeFileSync(path.join(dir, 'index.txt'), '');
+    writeFileSync(path.join(dir, 'serial'), '01\n');
+    writeFileSync(
+      config,
+      [
+        '[ca]',
+        'default_ca = fixture',
+        '[fixture]',
+        `database = ${path.join(dir, 'index.txt')}`,
+        `new_certs_dir = ${dir}`,
+        `serial = ${path.join(dir, 'serial')}`,
+        'default_md = sha256',
+        'policy = any',
+        'copy_extensions = copy',
+        'unique_subject = no',
+        'x509_extensions = extensions',
+        '[any]',
+        'organizationName = optional',
+        'commonName = supplied',
+        '[extensions]',
+        'basicConstraints = CA:TRUE',
+        'subjectKeyIdentifier = hash',
+        '',
+      ].join('\n'),
+    );
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
     execFileSync(
       'openssl',
       [
         'req',
-        '-x509',
+        '-new',
         '-newkey',
         'ec',
         '-pkeyopt',
@@ -104,13 +148,33 @@ export function makeCertificate(hostname: string, days: number): { key: string; 
         '-keyout',
         key,
         '-out',
-        cert,
-        '-days',
-        String(days),
+        csr,
         '-subj',
         `/O=Lookout E2E/CN=${hostname}`,
         '-addext',
         `subjectAltName=DNS:${hostname}`,
+      ],
+      { stdio: 'ignore' },
+    );
+    execFileSync(
+      'openssl',
+      [
+        'ca',
+        '-batch',
+        '-notext',
+        '-config',
+        config,
+        '-selfsign',
+        '-keyfile',
+        key,
+        '-in',
+        csr,
+        '-out',
+        cert,
+        '-startdate',
+        opensslTime(now - (lifetimeDays - days) * DAY),
+        '-enddate',
+        opensslTime(now + days * DAY),
       ],
       { stdio: 'ignore' },
     );

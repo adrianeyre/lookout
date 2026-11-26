@@ -11,3 +11,5 @@ docs/
 site/stageshow/kit/
 site/stageshow/LICENSE
 site/stageshow/NOTICE.md
+# Written by semantic-release on every release, not by hand.
+CHANGELOG.md

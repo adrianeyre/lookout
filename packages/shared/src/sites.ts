@@ -11,7 +11,13 @@ export type SiteStatus = 'pending' | 'up' | 'slow' | 'down';
 
 export const SITE_STATUSES: readonly Exclude<SiteStatus, 'pending'>[] = ['up', 'slow', 'down'];
 
-/** The TLS certificate's level: amber within the warn days, red within the critical days. */
+/**
+ * The TLS certificate's level: amber within the warn days, red within the critical days. A
+ * short-lived certificate (one whose whole lifetime is under about six weeks, such as a
+ * 12-hour certificate from Caddy's local CA or a 6-day one from Let's Encrypt) is judged by
+ * its lifetime instead: amber once a third of it is left, when its issuer should already
+ * have renewed it, and red once a sixth is left.
+ */
 export type TlsLevel = 'ok' | 'warn' | 'critical';
 
 export interface TlsThresholds {
@@ -29,6 +35,8 @@ export interface TlsCertificate {
   subject: string | null;
   /** The issuer's organisation or common name. */
   issuer: string;
+  /** When the certificate became valid, ms since the epoch. Absent from older results. */
+  validFrom?: number;
   /** When the certificate expires, ms since the epoch. */
   validTo: number;
   /** Whether it covers the Hosted Site's hostname. */
@@ -112,8 +120,27 @@ export const MAX_SITE_URL_LENGTH = 2048;
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
+ * How long before expiry a certificate turns amber and red, in ms: the configured days, or a
+ * third and a sixth of the certificate's lifetime when that is sooner. Automatic renewal
+ * (ACME clients, Caddy) happens with a third of the lifetime left, so a short-lived
+ * certificate that is being renewed is never Flagged just for being short-lived.
+ */
+export function tlsWindows(
+  certificate: Pick<TlsCertificate, 'validFrom' | 'validTo'>,
+  thresholds: TlsThresholds,
+): { warnMs: number; criticalMs: number } {
+  const warnMs = thresholds.warnDays * DAY_MS;
+  const criticalMs = thresholds.criticalDays * DAY_MS;
+  const lifetime =
+    certificate.validFrom === undefined ? Number.NaN : certificate.validTo - certificate.validFrom;
+  if (!(lifetime > 0)) return { warnMs, criticalMs };
+  return { warnMs: Math.min(warnMs, lifetime / 3), criticalMs: Math.min(criticalMs, lifetime / 6) };
+}
+
+/**
  * The single TLS rule (PRD §14): red when the certificate is expired, within the critical
- * days, doesn't match the hostname or isn't trusted; amber within the warn days.
+ * window, doesn't match the hostname or isn't trusted; amber within the warn window (see
+ * tlsWindows).
  */
 export function tlsLevel(
   certificate: TlsCertificate | null,
@@ -124,9 +151,11 @@ export function tlsLevel(
   if (!certificate.trusted || !certificate.hostnameMatches || certificate.error !== null) {
     return 'critical';
   }
+  if (certificate.validTo <= now) return 'critical';
   const left = certificate.validTo - now;
-  if (left <= thresholds.criticalDays * DAY_MS) return 'critical';
-  if (left <= thresholds.warnDays * DAY_MS) return 'warn';
+  const { warnMs, criticalMs } = tlsWindows(certificate, thresholds);
+  if (left <= criticalMs) return 'critical';
+  if (left <= warnMs) return 'warn';
   return 'ok';
 }
 

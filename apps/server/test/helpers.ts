@@ -53,6 +53,7 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     tlsWarnDays: 14,
     tlsCriticalDays: 7,
     folderScanHours: 0,
+    dataDir: null,
     ...overrides,
   };
 }

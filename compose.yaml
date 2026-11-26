@@ -50,7 +50,14 @@ services:
       LOOKOUT_TLS_CRITICAL_DAYS: ${LOOKOUT_TLS_CRITICAL_DAYS:-7}
       # The Host's largest folders: hours between scans, 0 for only when asked.
       LOOKOUT_FOLDER_SCAN_HOURS: ${LOOKOUT_FOLDER_SCAN_HOURS:-6}
+      # Where a password changed in Settings is kept (as a hash only), in the volume below.
+      LOOKOUT_DATA_DIR: /data
     volumes:
+      # Lookout's only writable place: the password chosen in Settings, nothing else.
+      - lookout-data:/data
       - /var/run/docker.sock:/var/run/docker.sock
       # The Host's root filesystem, read-only, so Host Metrics describe the Host (ADR-0003).
       - /:/host:ro,rslave
+
+volumes:
+  lookout-data:

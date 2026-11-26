@@ -27,13 +27,16 @@ import {
   type LiveEvents,
   type LogLine,
   type LogStreamEvents,
+  type PasswordChange,
+  MIN_PASSWORD_LENGTH,
   type SecretValue,
   type SessionInfo,
   type SitesSnapshot,
 } from '@lookout/shared';
 import { isIP } from 'node:net';
 import { isAllowedOrigin } from './auth/origin.ts';
-import { verifyPassword } from './auth/password.ts';
+import { hashPassword, verifyPassword } from './auth/password.ts';
+import { PasswordStore } from './auth/password-store.ts';
 import { LoginRateLimiter } from './auth/rate-limit.ts';
 import {
   SESSION_COOKIE,
@@ -105,6 +108,8 @@ export interface AppOptions {
   startFolderScanner?: boolean;
   /** How long after startup the first folder scan starts (default 30 s). */
   folderScanDelayMs?: number;
+  /** Where the password is kept. Defaults to one opened from config (tests replace it). */
+  passwordStore?: PasswordStore;
 }
 
 /** Most log lines sent in one event; a busier log is sent in several. */
@@ -272,10 +277,17 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     }
   });
 
-  const sessions = new SessionStore(config.sessionSecret, config.sessionIdleMs, now, {
-    passwordHash: config.passwordHash,
-    maxLifetimeMs: config.sessionMaxMs,
-  });
+  const passwords =
+    options.passwordStore ??
+    (await PasswordStore.open(config.passwordHash, config.dataDir ?? null, app.log));
+  // The password hash is part of the signing key, so a new password means a new store, and
+  // every session from before it ends (#80).
+  const sessionsFor = (passwordHash: string) =>
+    new SessionStore(config.sessionSecret, config.sessionIdleMs, now, {
+      passwordHash,
+      maxLifetimeMs: config.sessionMaxMs,
+    });
+  let sessions = sessionsFor(passwords.hash);
   // Figures from the pen-testing PRD's limits pre-condition: 5 failures per 15 minutes per
   // address (IPv6 by /64), at most 10,000 addresses held and 4 password checks at once.
   const limiter = new LoginRateLimiter(5, 15 * 60_000, now, {
@@ -406,7 +418,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       const { password } = request.body as { password: string };
       let correct = false;
       try {
-        correct = await verifyPassword(password, config.passwordHash);
+        correct = await verifyPassword(password, passwords.hash);
       } finally {
         attempt.finish(correct);
       }
@@ -436,7 +448,86 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       .send();
   });
 
-  app.get('/api/session', async (): Promise<SessionInfo> => ({ authenticated: true }));
+  app.get('/api/session', async (): Promise<SessionInfo> => ({
+    authenticated: true,
+    passwordChangeable: passwords.changeable,
+  }));
+
+  // Change the password from Settings. The current password is checked like a sign-in, under
+  // the same per-address limit, so a session left open is not enough to change it.
+  app.post<{ Body: unknown }>(
+    '/api/password',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['currentPassword', 'newPassword'],
+          additionalProperties: false,
+          properties: {
+            currentPassword: { type: 'string', minLength: 1, maxLength: 1024 },
+            newPassword: { type: 'string', minLength: 1, maxLength: 1024 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!passwords.changeable) {
+        return reply.code(409).send({
+          error:
+            'Set LOOKOUT_DATA_DIR (and give it a volume) to change the password here, or put a new LOOKOUT_PASSWORD_HASH in .env.',
+        } satisfies ApiError);
+      }
+      const { currentPassword, newPassword } = request.body as PasswordChange;
+      if (newPassword.length < MIN_PASSWORD_LENGTH) {
+        return reply.code(400).send({
+          error: `Use a new password of at least ${MIN_PASSWORD_LENGTH} characters.`,
+        } satisfies ApiError);
+      }
+      const ip = request.ip;
+      const attempt = limiter.begin(ip);
+      if ('retryAfterSeconds' in attempt) {
+        return reply
+          .code(429)
+          .header('retry-after', String(attempt.retryAfterSeconds))
+          .send({ error: 'Too many failed attempts. Try again later.' } satisfies ApiError);
+      }
+      let correct = false;
+      try {
+        correct = await verifyPassword(currentPassword, passwords.hash);
+      } finally {
+        attempt.finish(correct);
+      }
+      if (!correct) {
+        request.log.warn({ ip }, 'Failed password change');
+        // 403, not 401: the session is still good, only the current password was wrong.
+        return reply
+          .code(403)
+          .send({ error: 'The current password is incorrect' } satisfies ApiError);
+      }
+      try {
+        await passwords.change(await hashPassword(newPassword));
+      } catch (error) {
+        request.log.error({ err: error }, 'Could not save the new password');
+        return reply
+          .code(500)
+          .send({ error: 'The new password could not be saved' } satisfies ApiError);
+      }
+      request.log.info({ ip }, 'Password changed; every other session has ended');
+      // Every session ends with the old password, but whoever changed it stays signed in.
+      sessions = sessionsFor(passwords.hash);
+      const { cookie, session } = sessions.create();
+      return reply
+        .header(
+          'set-cookie',
+          sessionCookieHeader(cookie, {
+            secure: isSecure(request),
+            maxAgeSeconds: sessions.maxAgeSeconds(session),
+          }),
+        )
+        .code(204)
+        .send();
+    },
+  );
 
   app.get('/api/docker/status', async (): Promise<DockerStatus> => ({
     available: await docker.ping(),
