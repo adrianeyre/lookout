@@ -8,7 +8,7 @@
       "@semantic-release/changelog",
       { "changelogFile": "CHANGELOG.md", "changelogTitle": "# Changelog" }
     ],
-    ["@semantic-release/npm", { "npmPublish": false }],
+    "./scripts/release-version.ts",
     [
       "@semantic-release/git",
       {
