@@ -21,7 +21,7 @@ test('the header summary updates live on both pages and fits 360px', async ({ pa
   await expect(page.getByTestId('summary-mem')).toHaveText(/^Mem 85\.0%/);
   await expect(page.getByTestId('summary-mem')).toHaveAttribute('data-level', 'warn');
 
-  await page.getByRole('link', { name: 'Containers' }).click();
+  await page.getByRole('link', { name: 'Docker', exact: true }).click();
   await expect(page.getByTestId('summary-mem')).toHaveAttribute('data-level', 'warn');
   await writeHostFile(E2E_PORT, 'proc/meminfo', meminfoWithUsage(92));
   await expect(page.getByTestId('summary-mem')).toHaveAttribute('data-level', 'critical');

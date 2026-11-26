@@ -13,7 +13,7 @@ import { Link } from './Link.tsx';
 
 const NAV: { section: 'host' | 'containers' | 'websites'; label: string }[] = [
   { section: 'host', label: 'Host' },
-  { section: 'containers', label: 'Containers' },
+  { section: 'containers', label: 'Docker' },
   { section: 'websites', label: 'Websites' },
 ];
 

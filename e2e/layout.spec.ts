@@ -20,7 +20,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
       expect(background).toBe(colorScheme === 'dark' ? 'rgb(13, 17, 23)' : 'rgb(246, 248, 250)');
 
-      await page.getByRole('link', { name: 'Containers' }).click();
+      await page.getByRole('link', { name: 'Docker', exact: true }).click();
       await expect(page).toHaveURL(/\/containers$/);
       await expect(page.getByRole('heading', { name: 'Containers' })).toBeVisible();
       await expectNoHorizontalScroll(page);

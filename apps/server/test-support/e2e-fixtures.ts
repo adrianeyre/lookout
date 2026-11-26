@@ -41,6 +41,8 @@ export function fixtureContainers(
           destination: '/usr/share/nginx/html',
           readOnly: true,
         },
+        // A named volume, for the volumes under each Container (ADR-0015).
+        { type: 'volume', source: 'shop_cache', destination: '/var/cache/nginx', readOnly: false },
       ],
       networks: [
         { name: 'shop_default', ipAddress: '172.18.0.2', ipv6Address: null, gateway: '172.18.0.1' },

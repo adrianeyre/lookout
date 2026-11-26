@@ -12,6 +12,8 @@ import {
   SITE_ID,
   STATS_MEASURE_PATH,
   STATS_PATH,
+  VOLUMES_PATH,
+  VOLUME_NAME,
   actionRefusal,
   isStatsRange,
   isContainerAction,
@@ -37,6 +39,7 @@ import {
   type SiteStats,
   type SitesSnapshot,
   type StatsOverview,
+  type VolumesSnapshot,
 } from '@lookout/shared';
 import { isIP } from 'node:net';
 import { isAllowedOrigin } from './auth/origin.ts';
@@ -58,6 +61,7 @@ import { detailOf, type InspectedContainer } from './docker/parse.ts';
 import { publicSnapshot, secretValue } from './docker/secrets.ts';
 import { StatsHub } from './docker/stats.ts';
 import { ContainerStore } from './docker/store.ts';
+import { VolumeService } from './docker/volumes.ts';
 import { HostRoot } from './host-root.ts';
 import { FolderScanner } from './folders/scan.ts';
 import type { BlockUnitProbe } from './metrics/block-size.ts';
@@ -343,6 +347,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   });
   // Container Hosted Sites follow the Container list, which follows Docker events.
   store.subscribe((snapshot) => siteMonitor.updateContainers(snapshot));
+  const volumes = new VolumeService(docker, app.log, now);
   // Site Stats (ADR-0013, ADR-0014): visitors, uptime and sizes, kept as daily totals.
   const stats = new StatsService({
     config,
@@ -927,6 +932,64 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     }
     return reply.code(202).send(folderScanner.snapshot satisfies FolderScan);
   });
+
+  // Docker's volumes and the Containers that use each (ADR-0015).
+  app.get(VOLUMES_PATH, async (_request, reply) => {
+    try {
+      return (await volumes.snapshot()) satisfies VolumesSnapshot;
+    } catch {
+      return dockerUnavailable(reply);
+    }
+  });
+
+  // Deletes an unused volume (ADR-0015). It takes the name and the same name typed again; the
+  // server checks no Container, running or stopped, mounts it, and never forces. The Origin
+  // check above makes it CSRF-safe.
+  app.post<{ Params: { name: string }; Body: unknown }>(
+    '/api/volumes/:name/delete',
+    async (request, reply) => {
+      const { name } = request.params;
+      const body = request.body;
+      const confirmName =
+        typeof body === 'object' && body !== null && 'confirmName' in body
+          ? body.confirmName
+          : undefined;
+      const noSuchVolume = () =>
+        reply.code(404).send({ error: 'No such volume' } satisfies ApiError);
+      if (!VOLUME_NAME.test(name)) return noSuchVolume();
+      let outcome;
+      try {
+        outcome = await volumes.delete(name, confirmName);
+      } catch {
+        return dockerUnavailable(reply);
+      }
+      switch (outcome.result) {
+        case 'unknown':
+          return noSuchVolume();
+        case 'mismatch':
+          return reply
+            .code(400)
+            .send({ error: "Type the volume's name to confirm deleting it" } satisfies ApiError);
+        case 'busy':
+          return reply
+            .code(409)
+            .send({ error: 'Another volume is being deleted' } satisfies ApiError);
+        case 'in-use':
+          request.log.warn({ volume: name }, 'Volume delete refused: in use');
+          return reply.code(409).send({
+            error: `In use by ${outcome.containers.join(', ')}; only unused volumes can be deleted`,
+          } satisfies ApiError);
+        case 'failed': {
+          const message = dockerErrorMessage(outcome.error);
+          request.log.warn({ volume: name, error: message }, 'Volume delete failed');
+          return reply.code(502).send({ error: message } satisfies ApiError);
+        }
+        case 'deleted':
+          request.log.info({ volume: name }, 'Volume deleted');
+          return { deleted: name };
+      }
+    },
+  );
 
   app.get(STATS_PATH, async (): Promise<StatsOverview> => stats.overview());
 

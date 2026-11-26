@@ -1,6 +1,6 @@
 import { EventEmitter, on } from 'node:events';
 import type { ContainerAction, ContainerEvent, ContainerStats, LogLine } from '@lookout/shared';
-import type { DockerClient, LogOptions } from '../src/docker/client.ts';
+import type { DockerClient, EngineVolume, LogOptions } from '../src/docker/client.ts';
 import type { DiskUsageReport } from '../src/docker/disk-usage.ts';
 import { EngineError } from '../src/docker/engine.ts';
 import type { InspectedContainer } from '../src/docker/parse.ts';
@@ -173,6 +173,51 @@ export class FakeDocker implements DockerClient {
     );
   }
 
+  /** Volumes besides those Containers mount, with their sizes for diskUsage. */
+  readonly volumes = new Map<string, EngineVolume & { bytes: number }>();
+  /** Every volume removed, in order. */
+  readonly removedVolumes: string[] = [];
+
+  /** Every volume: those set in `volumes`, and those a Container mounts. */
+  async listVolumes(): Promise<EngineVolume[]> {
+    this.#assertAvailable();
+    const all = new Map<string, EngineVolume>();
+    for (const [name, volume] of this.volumes) {
+      all.set(name, {
+        name,
+        driver: volume.driver,
+        createdAt: volume.createdAt,
+        project: volume.project,
+      });
+    }
+    for (const container of this.#containers.values()) {
+      for (const mount of container.mounts) {
+        if (mount.type === 'volume' && !all.has(mount.source)) {
+          all.set(mount.source, {
+            name: mount.source,
+            driver: 'local',
+            createdAt: null,
+            project: container.composeProject,
+          });
+        }
+      }
+    }
+    return [...all.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /** Like Docker without force: a volume any Container mounts cannot be removed. */
+  async removeVolume(name: string): Promise<void> {
+    this.#assertAvailable();
+    const user = [...this.#containers.values()].find((c) =>
+      c.mounts.some((m) => m.type === 'volume' && m.source === name),
+    );
+    if (user) {
+      throw dockerError(409, `remove ${name}: volume is in use - [${user.id}]`);
+    }
+    if (!this.volumes.delete(name)) throw dockerError(404, `get ${name}: no such volume`);
+    this.removedVolumes.push(name);
+  }
+
   /** Set to answer diskUsage with this report; null makes one up from the Containers. */
   diskUsageReport: DiskUsageReport | null = null;
   /** How long diskUsage takes, so a test can see "Measure now" running. */
@@ -205,12 +250,20 @@ export class FakeDocker implements DockerClient {
         project: c.composeProject,
         volumes: c.composeProject ? [`${c.composeProject}_data`] : [],
       })),
-      volumes: projects.map((project) => ({
-        name: `${project}_data`,
-        bytes: 50_000_000,
-        refCount: 1,
-        project,
-      })),
+      volumes: [
+        ...projects.map((project) => ({
+          name: `${project}_data`,
+          bytes: 50_000_000,
+          refCount: 1,
+          project,
+        })),
+        ...[...this.volumes.values()].map((volume) => ({
+          name: volume.name,
+          bytes: volume.bytes,
+          refCount: 0,
+          project: volume.project,
+        })),
+      ],
       buildCache: [{ bytes: 20_000_000, inUse: false, shared: false }],
     };
   }

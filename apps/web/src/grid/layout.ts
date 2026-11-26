@@ -135,6 +135,13 @@ export const PAGE_WIDGETS: Readonly<Record<GridPage, readonly WidgetSpec[]>> = {
       min: { w: 6, h: 12 },
       grows: LONG,
     },
+    {
+      id: 'containers.volumes',
+      title: 'Unused volumes',
+      initial: { x: 0, y: 48, w: 12, h: 14 },
+      min: { w: 4, h: 8 },
+      grows: 200,
+    },
   ],
   container: [
     {

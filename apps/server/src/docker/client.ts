@@ -35,5 +35,19 @@ export interface DockerClient {
    * Docker's disk usage (GET /system/df) for Site Stats. Slow on a busy Host, so it is asked
    * for once a day and on "Measure now", never per page view. Read-only (ADR-0013).
    */
-  diskUsage(): Promise<DiskUsageReport>;
+  diskUsage(types?: readonly 'volume'[]): Promise<DiskUsageReport>;
+  /** Every volume (GET /volumes), for the Containers page's volumes (ADR-0015). */
+  listVolumes(): Promise<EngineVolume[]>;
+  /**
+   * Deletes a volume no Container uses (ADR-0015). Never forced: Docker itself refuses one in
+   * use. Rejects with Docker's error otherwise.
+   */
+  removeVolume(name: string): Promise<void>;
+}
+
+export interface EngineVolume {
+  name: string;
+  driver: string;
+  createdAt: number | null;
+  project: string | null;
 }

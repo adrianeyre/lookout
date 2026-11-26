@@ -3,7 +3,7 @@ import { E2E_PORT, dockerControl, login, openDockerStreams, sitePort } from './s
 
 async function openContainers(page: Page) {
   await login(page);
-  await page.getByRole('link', { name: 'Containers', exact: true }).click();
+  await page.getByRole('link', { name: 'Docker', exact: true }).click();
   await expect(page.getByTestId('container-row').first()).toBeVisible();
 }
 
@@ -108,7 +108,7 @@ test.describe('Containers', () => {
     await expect(page.getByTestId('memory-card')).toBeVisible();
     await expect(page.getByTestId('hostname')).toHaveText('harbour');
 
-    await page.getByRole('link', { name: 'Containers', exact: true }).click();
+    await page.getByRole('link', { name: 'Docker', exact: true }).click();
     await dockerControl(E2E_PORT, 'available', { available: true });
     await expect(page.getByTestId('container-row')).toHaveCount(8, { timeout: 5000 });
     await expect(page.getByTestId('docker-unavailable')).toHaveCount(0);
@@ -118,7 +118,7 @@ test.describe('Containers', () => {
     await login(page);
     await expect(page.getByTestId('memory-card')).toBeVisible();
     expect(await openDockerStreams(E2E_PORT, 'stats')).toBe(0);
-    await page.getByRole('link', { name: 'Containers', exact: true }).click();
+    await page.getByRole('link', { name: 'Docker', exact: true }).click();
     // Two running Containers in the fixtures.
     await expect.poll(() => openDockerStreams(E2E_PORT, 'stats')).toBe(2);
     await page.getByRole('link', { name: 'Host', exact: true }).click();
