@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { FOLDER_SCAN_PATH, PRIVATE_FOLDERS, type FolderScan } from '@lookout/shared';
+import {
+  FOLDER_SCAN_PATH,
+  PRIVATE_FOLDERS,
+  type DockerDiskPart,
+  type FolderScan,
+  type StatsOverview,
+} from '@lookout/shared';
 import { postJson } from '../api.ts';
 import { scanStatusText } from '../folders.ts';
 import { useNow } from '../hooks.ts';
@@ -18,6 +24,9 @@ import { Sparkline } from '../components/Sparkline.tsx';
 import { formatBytes, formatDuration, formatLoad, formatPercent, formatRate } from '../format.ts';
 import { useLiveEvent, useThresholds } from '../live.ts';
 import { PageGrid } from '../grid/PageGrid.tsx';
+import { BarChart } from '../components/Chart.tsx';
+import { useStatsOverview } from '../stats.ts';
+import { MeasureNow } from './SiteStatsPage.tsx';
 
 function windowLabel(window: LiveWindowSnapshot | undefined): string {
   const minutes = window ? Math.round((window.capacity * window.sampleIntervalMs) / 60_000) : 0;
@@ -439,10 +448,130 @@ export function FoldersCard({ scan, now }: { scan: FolderScan | undefined; now: 
   );
 }
 
+const DOCKER_PARTS = [
+  { key: 'images', name: 'Images', point: 'imagesBytes', tone: 'primary' },
+  { key: 'containers', name: 'Containers', point: 'containersBytes', tone: 'warn' },
+  { key: 'volumes', name: 'Volumes', point: 'volumesBytes', tone: 'secondary' },
+  { key: 'buildCache', name: 'Build cache', point: 'buildCacheBytes', tone: 'muted' },
+] as const;
+
+/**
+ * Docker's disk usage, server-wide, like `docker system df` (#11): measured daily and kept 90
+ * days. Read-only: it says what pruning could free, and never prunes.
+ */
+export function DockerDiskCard({
+  overview,
+  error,
+  now,
+  onMeasured,
+}: {
+  overview: StatsOverview | undefined;
+  error: string | null;
+  now: number;
+  onMeasured: () => void;
+}) {
+  let body;
+  if (!overview) {
+    body = error ? (
+      <p className="error" role="alert" data-testid="docker-disk-error">
+        {error}
+      </p>
+    ) : (
+      <p className="muted" role="status">
+        Loading…
+      </p>
+    );
+  } else if (!overview.available) {
+    body = (
+      <p className="error" role="alert" data-testid="docker-disk-error">
+        {overview.error ?? 'Site Stats are unavailable.'}
+      </p>
+    );
+  } else if (!overview.docker.latest) {
+    body = (
+      <p className="muted" data-testid="docker-disk-empty">
+        Not measured yet. Docker&apos;s disk usage is measured daily at 03:00.
+      </p>
+    );
+  } else {
+    const latest = overview.docker.latest;
+    const points = overview.docker.points;
+    const total = DOCKER_PARTS.reduce((sum, part) => sum + latest[part.key].bytes, 0);
+    const reclaimable = DOCKER_PARTS.reduce(
+      (sum, part) => sum + latest[part.key].reclaimableBytes,
+      0,
+    );
+    const row = (name: string, part: DockerDiskPart, key: string) => (
+      <tr key={key} data-testid="docker-disk-row" data-part={key}>
+        <th scope="row">{name}</th>
+        <td>{part.count.toLocaleString('en-GB')}</td>
+        <td>{formatBytes(part.bytes)}</td>
+        <td>{formatBytes(part.reclaimableBytes)}</td>
+      </tr>
+    );
+    body = (
+      <>
+        <p className="headline">
+          <span className="headline__value" data-testid="docker-disk-total">
+            {formatBytes(total)}
+          </span>
+          <span className="headline__label">used, {formatBytes(reclaimable)} reclaimable</span>
+        </p>
+        <table className="rates">
+          <thead>
+            <tr>
+              <th scope="col">Type</th>
+              <th scope="col">Count</th>
+              <th scope="col">Size</th>
+              <th scope="col">Reclaimable</th>
+            </tr>
+          </thead>
+          <tbody>{DOCKER_PARTS.map((part) => row(part.name, latest[part.key], part.key))}</tbody>
+        </table>
+        {points.length > 0 && (
+          <BarChart
+            stacked
+            series={DOCKER_PARTS.map((part) => ({
+              name: part.name,
+              values: points.map((p) => p[part.point]),
+              tone: part.tone,
+            }))}
+            starts={points.map((p) => p.start)}
+            bucket="day"
+            label="Docker disk usage per day, last 90 days"
+            format={formatBytes}
+            summary="average"
+            testId="docker-disk-chart"
+          />
+        )}
+        <p className="muted folders__note">
+          Reclaimable is what <code>docker system prune</code> could free. Lookout only measures; it
+          never prunes.
+        </p>
+      </>
+    );
+  }
+  return (
+    <Card title="Docker disk" testId="docker-disk-card">
+      {body}
+      {overview?.available && (
+        <MeasureNow
+          state={overview.measure.state}
+          lastMeasuredAt={overview.measure.lastMeasuredAt}
+          error={overview.measure.error}
+          now={now}
+          onMeasured={onMeasured}
+        />
+      )}
+    </Card>
+  );
+}
+
 export function HostPage() {
   const sample = useLiveEvent('host');
   const window = useLiveEvent('window');
   const folders = useLiveEvent('folders');
+  const stats = useStatsOverview();
   const now = useNow(30_000);
   if (!sample) {
     return (
@@ -465,6 +594,14 @@ export function HostPage() {
         'host.diskIo': <DiskIoCard diskIo={sample.diskIo} {...live} />,
         'host.network': <NetworkCard network={sample.network} {...live} />,
         'host.folders': <FoldersCard scan={folders} now={now} />,
+        'host.docker': (
+          <DockerDiskCard
+            overview={stats.value}
+            error={stats.error}
+            now={now}
+            onMeasured={stats.refresh}
+          />
+        ),
       }}
     />
   );

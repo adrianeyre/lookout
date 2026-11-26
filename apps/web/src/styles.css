@@ -2503,3 +2503,237 @@ code {
   margin: var(--space-3) 0 0;
   font-size: 0.85rem;
 }
+
+/* Charts (Site Stats, Docker disk): plain SVG, coloured by the series tokens. */
+.chart {
+  margin: var(--space-3) 0 0;
+  min-inline-size: 0;
+}
+
+.chart__legend {
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-block-end: var(--space-1);
+  padding: 0;
+  list-style: none;
+}
+
+.chart__plot {
+  display: grid;
+  gap: 2px;
+}
+
+.chart__max,
+.chart__times {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 120px;
+  overflow: visible;
+}
+
+.chart__times {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-block-start: 2px;
+}
+
+.chart__axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart__hit {
+  fill: var(--color-text);
+  opacity: 0;
+}
+
+.chart__hit:hover {
+  opacity: 0.06;
+}
+
+.chart__line--primary {
+  stroke: var(--color-meter);
+}
+.chart__line--secondary {
+  stroke: var(--color-series-2);
+}
+.chart__line--ok {
+  stroke: var(--color-ok);
+}
+.chart__line--warn {
+  stroke: var(--color-warn);
+}
+.chart__line--critical {
+  stroke: var(--color-critical);
+}
+.chart__line--muted {
+  stroke: var(--color-text-muted);
+}
+
+.chart__bar--primary {
+  fill: var(--color-meter);
+}
+.chart__bar--secondary {
+  fill: var(--color-series-2);
+}
+.chart__bar--ok {
+  fill: var(--color-ok);
+}
+.chart__bar--warn {
+  fill: var(--color-warn);
+}
+.chart__bar--critical {
+  fill: var(--color-critical);
+}
+.chart__bar--muted {
+  fill: var(--color-text-muted);
+}
+
+.legend__item--ok::before {
+  background: var(--color-ok);
+}
+.legend__item--warn::before {
+  background: var(--color-warn);
+}
+.legend__item--critical::before {
+  background: var(--color-critical);
+}
+.legend__item--muted::before {
+  background: var(--color-text-muted);
+}
+
+/* The Site Stats page's head: back, the site's URL, and the range switch. */
+.site-stats__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  min-inline-size: 0;
+}
+
+.site-stats__head .back {
+  margin: 0;
+}
+
+.site-stats__title {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.segmented {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  overflow: hidden;
+}
+
+.segmented__option {
+  position: relative;
+  display: inline-flex;
+}
+
+.segmented__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented__option span {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 36px;
+  padding: 0 var(--space-3);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.segmented__option + .segmented__option span {
+  border-inline-start: 1px solid var(--color-border);
+}
+
+.segmented__option input:checked + span {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.segmented__option input:focus-visible + span {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.stats-empty {
+  margin: var(--space-2) 0 0;
+}
+
+.top-table th:first-child {
+  font-size: 0.8rem;
+}
+
+.site-containers {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-containers li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.measure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin-block-start: var(--space-3);
+  font-size: 0.85rem;
+}
+
+/* The Websites list: today's visitors and their 7-day sparkline. */
+.site__visitors {
+  display: grid;
+  gap: 2px;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.site__visitors .sparkline {
+  block-size: 20px;
+  margin: 0;
+}
+
+.site__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}

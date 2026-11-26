@@ -1,7 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_TLS_THRESHOLDS, type HostedSite, type SitesSnapshot } from '@lookout/shared';
+import {
+  DEFAULT_TLS_THRESHOLDS,
+  type HostedSite,
+  type SitesSnapshot,
+  type StatsOverview,
+} from '@lookout/shared';
 import { hostedSite, summary } from '../test-support.ts';
 import { SiteList } from './WebsitesPage.tsx';
 
@@ -122,5 +127,65 @@ describe('SiteList', () => {
   it('explains where Hosted Sites come from when there are none', () => {
     render(<SiteList sites={snapshot([])} containers={containers} now={NOW} />);
     expect(screen.getByTestId('sites-empty').textContent).toContain('LOOKOUT_SITES');
+  });
+
+  describe('visitor figures (#11)', () => {
+    const overview = (overrides: Partial<StatsOverview> = {}): StatsOverview => ({
+      available: true,
+      error: null,
+      persistent: true,
+      retentionDays: 90,
+      accessLogs: true,
+      sites: { [sites[1]!.id]: { todayVisitors: 3, last7Days: [0, 1, 4, 2, 0, 5, 3] } },
+      measure: { state: 'idle', lastMeasuredAt: null, error: null },
+      docker: { latest: null, points: [] },
+      ...overrides,
+    });
+
+    it("shows today's visitors and a 7-day sparkline, and links to the Stats page", () => {
+      render(
+        <SiteList
+          sites={snapshot([sites[1]!, sites[2]!])}
+          containers={containers}
+          now={NOW}
+          stats={overview()}
+        />,
+      );
+      const [blog, wiki] = rows();
+      expect(within(blog!).getByTestId('site-visitors-today').textContent).toBe('3');
+      expect(within(blog!).getByTestId('site-visitors-sparkline').getAttribute('data-points')).toBe(
+        '7',
+      );
+      // No figures for a site the logs have nothing on.
+      expect(within(wiki!).queryByTestId('site-visitors')).toBeNull();
+      expect(
+        within(blog!)
+          .getByRole('link', { name: 'Stats: http://blog.example/' })
+          .getAttribute('href'),
+      ).toBe(`/websites/${sites[1]!.id}`);
+    });
+
+    it('hides them without access logs, or when the stats are unavailable', () => {
+      const { rerender } = render(
+        <SiteList
+          sites={snapshot([sites[1]!])}
+          containers={containers}
+          now={NOW}
+          stats={overview({ accessLogs: false })}
+        />,
+      );
+      expect(screen.queryByTestId('site-visitors')).toBeNull();
+      rerender(
+        <SiteList
+          sites={snapshot([sites[1]!])}
+          containers={containers}
+          now={NOW}
+          stats={overview({ available: false, error: 'No store' })}
+        />,
+      );
+      expect(screen.queryByTestId('site-visitors')).toBeNull();
+      // The Stats page is still a click away.
+      expect(screen.getByTestId('site-stats-link')).toBeTruthy();
+    });
   });
 });

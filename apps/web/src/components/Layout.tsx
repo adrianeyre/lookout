@@ -37,8 +37,8 @@ export function Layout({ page, children }: { page: PageName; children: ReactNode
     () => ({ items: widgetItems, setItems: setWidgetItems }),
     [widgetItems],
   );
-  // A Container's detail view belongs to the Containers section.
-  const section = page === 'container' ? 'containers' : page;
+  // A Container's detail view belongs to the Containers section, a Site Stats page to Websites.
+  const section = page === 'container' ? 'containers' : page === 'site' ? 'websites' : page;
   return (
     <WidgetsMenuContext.Provider value={widgetsMenu}>
       <div className="shell">

@@ -48,7 +48,7 @@ export interface WidgetPlacement extends Cell {
 }
 
 /** The dashboard's pages that have a Grid. */
-export type GridPage = 'host' | 'containers' | 'container' | 'websites' | 'settings';
+export type GridPage = 'host' | 'containers' | 'container' | 'websites' | 'site' | 'settings';
 
 export interface WidgetSpec {
   /** Unique across every page, such as "host.cpu". */
@@ -116,6 +116,13 @@ export const PAGE_WIDGETS: Readonly<Record<GridPage, readonly WidgetSpec[]>> = {
       id: 'host.folders',
       title: 'Largest folders',
       initial: { x: 0, y: 32, w: 12, h: 24 },
+      min: { w: 4, h: 8 },
+      grows: 80,
+    },
+    {
+      id: 'host.docker',
+      title: 'Docker disk',
+      initial: { x: 0, y: 56, w: 12, h: 22 },
       min: { w: 4, h: 8 },
       grows: 80,
     },
@@ -194,6 +201,85 @@ export const PAGE_WIDGETS: Readonly<Record<GridPage, readonly WidgetSpec[]>> = {
       initial: { x: 0, y: 0, w: 12, h: 30 },
       min: { w: 6, h: 12 },
       grows: LONG,
+    },
+  ],
+  site: [
+    {
+      id: 'site.visitors',
+      title: 'Visitors',
+      initial: { x: 0, y: 0, w: 6, h: 16 },
+      min: MIN,
+      grows: 40,
+    },
+    {
+      id: 'site.pageViews',
+      title: 'Page views and requests',
+      initial: { x: 6, y: 0, w: 6, h: 16 },
+      min: MIN,
+      grows: 40,
+    },
+    {
+      id: 'site.bots',
+      title: 'Humans and bots',
+      initial: { x: 0, y: 16, w: 6, h: 16 },
+      min: MIN,
+      grows: 40,
+    },
+    {
+      id: 'site.status',
+      title: 'Status codes',
+      initial: { x: 6, y: 16, w: 6, h: 16 },
+      min: MIN,
+      grows: 40,
+    },
+    {
+      id: 'site.responseTime',
+      title: 'Response time',
+      initial: { x: 0, y: 32, w: 6, h: 16 },
+      min: MIN,
+      grows: 40,
+    },
+    {
+      id: 'site.uptime',
+      title: 'Uptime',
+      initial: { x: 6, y: 32, w: 6, h: 16 },
+      min: MIN,
+      grows: 40,
+    },
+    {
+      id: 'site.topPages',
+      title: 'Top pages',
+      initial: { x: 0, y: 48, w: 6, h: 20 },
+      min: MIN,
+      grows: 60,
+    },
+    {
+      id: 'site.topReferrers',
+      title: 'Top referrers',
+      initial: { x: 6, y: 48, w: 6, h: 20 },
+      min: MIN,
+      grows: 60,
+    },
+    {
+      id: 'site.size',
+      title: 'Disk and Docker space',
+      initial: { x: 0, y: 68, w: 8, h: 22 },
+      min: MIN,
+      grows: 60,
+    },
+    {
+      id: 'site.tls',
+      title: 'TLS certificate',
+      initial: { x: 8, y: 68, w: 4, h: 8 },
+      min: MIN,
+      grows: 20,
+    },
+    {
+      id: 'site.containers',
+      title: 'Containers',
+      initial: { x: 8, y: 76, w: 4, h: 14 },
+      min: MIN,
+      grows: 60,
     },
   ],
   settings: [
