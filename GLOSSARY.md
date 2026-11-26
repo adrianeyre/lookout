@@ -59,3 +59,19 @@ _Avoid_: Panel, card (that is how a section looks), tile
 **Grid**:
 The 12 columns and rows every Widget snaps to, and the Widgets menu that shows or hides them. Each page has its own.
 _Avoid_: Dashboard (the whole app), layout (on its own)
+
+**Site Stats**:
+A Hosted Site's figures over time: visitors, page views, requests, uptime and its size, kept as hourly and daily totals in `LOOKOUT_DATA_DIR`, and shown on its Site Stats page.
+_Avoid_: Analytics, metrics (those are Host Metrics), history (on its own)
+
+**Visitor**:
+A distinct client address (an IPv6 /64 counting as one) among the human requests for a Hosted Site in one hour or day, from the reverse proxy's access logs. Bots and Lookout's own checks are never Visitors.
+_Avoid_: User (that is an account in an app), session, unique
+
+**Page View**:
+A successful `GET` of a Hosted Site, by a person, answered with HTML.
+_Avoid_: Hit, request (every request counts as one)
+
+**Site Size**:
+The disk and Docker space a Hosted Site takes: its Compose Project's volumes, Images and writable layers, or the folder it serves. It is measured once a day and on Measure now.
+_Avoid_: Footprint, usage
