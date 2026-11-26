@@ -4,6 +4,10 @@
  * issue is open, or while any open issue carries `prd:pen-test` and `severity:critical` or
  * `severity:high`, and names what is blocking in the job summary.
  *
+ * PEN_TEST_TRACKING_ISSUE names the current round's tracking issue. Left empty, no round is
+ * in progress and only the open findings are checked; set but not found, the gate fails
+ * closed.
+ *
  *   GITHUB_TOKEN=… GITHUB_REPOSITORY=owner/name PEN_TEST_TRACKING_ISSUE=75 \
  *     node scripts/release-gate.ts
  *
@@ -34,9 +38,16 @@ export interface GateVerdict {
   blockers: Blocker[];
 }
 
-/** The gate's decision, from the tracking issue and every open `prd:pen-test` issue. */
+/** No pen-test round is in progress, so there is no tracking issue to wait for. */
+export const NO_ROUND = 'no-round';
+
+/**
+ * The gate's decision, from the tracking issue and every open `prd:pen-test` issue.
+ * `tracking` is the round's tracking issue, `null` when it was named but not found (the gate
+ * fails closed), or `NO_ROUND` when no round is in progress.
+ */
 export function gateVerdict(
-  tracking: GateIssue | null,
+  tracking: GateIssue | null | typeof NO_ROUND,
   openPenTestIssues: GateIssue[],
 ): GateVerdict {
   const blockers: Blocker[] = [];
@@ -46,7 +57,7 @@ export function gateVerdict(
       title: 'No tracking issue',
       reason: 'the round’s tracking issue was not found, so the gate fails closed',
     });
-  } else if (tracking.state === 'open') {
+  } else if (tracking !== NO_ROUND && tracking.state === 'open') {
     blockers.push({
       number: tracking.number,
       title: tracking.title,
@@ -69,7 +80,7 @@ export function gateVerdict(
 /** The job summary, in Markdown. */
 export function summary(verdict: GateVerdict, repository: string): string {
   if (verdict.pass) {
-    return '## Pen-test release gate: open\n\nThe round is closed and no high or critical finding is open.\n';
+    return '## Pen-test release gate: open\n\nNo pen-test round is open and no high or critical finding is open.\n';
   }
   const rows = verdict.blockers.map((b) =>
     b.number > 0
@@ -117,12 +128,19 @@ async function github<T>(url: string, token: string): Promise<T | null> {
 async function main(): Promise<void> {
   const token = process.env.GITHUB_TOKEN;
   const repository = process.env.GITHUB_REPOSITORY;
-  const trackingNumber = Number(process.env.PEN_TEST_TRACKING_ISSUE);
-  if (!token || !repository || !Number.isSafeInteger(trackingNumber) || trackingNumber <= 0) {
-    throw new Error('GITHUB_TOKEN, GITHUB_REPOSITORY and PEN_TEST_TRACKING_ISSUE are required');
+  if (!token || !repository) {
+    throw new Error('GITHUB_TOKEN and GITHUB_REPOSITORY are required');
+  }
+  const trackingInput = (process.env.PEN_TEST_TRACKING_ISSUE ?? '').trim();
+  const trackingNumber = Number(trackingInput);
+  if (trackingInput !== '' && (!Number.isSafeInteger(trackingNumber) || trackingNumber <= 0)) {
+    throw new Error('PEN_TEST_TRACKING_ISSUE must be an issue number, or empty for no round');
   }
   const api = `https://api.github.com/repos/${repository}`;
-  const tracking = await github<ApiIssue>(`${api}/issues/${trackingNumber}`, token);
+  const tracking =
+    trackingInput === ''
+      ? NO_ROUND
+      : await github<ApiIssue>(`${api}/issues/${trackingNumber}`, token);
 
   const open: GateIssue[] = [];
   for (let page = 1; ; page++) {
@@ -138,7 +156,11 @@ async function main(): Promise<void> {
   }
 
   const verdict = gateVerdict(
-    tracking && !tracking.pull_request ? toGateIssue(tracking) : null,
+    tracking === NO_ROUND
+      ? NO_ROUND
+      : tracking && !tracking.pull_request
+        ? toGateIssue(tracking)
+        : null,
     open,
   );
   const text = summary(verdict, repository);

@@ -35,7 +35,9 @@ updates:
         update-types: [minor, patch]
 
   # Images in the Compose files: the optional socket proxy, pinned by tag and digest, and
-  # Lookout's own X.Y tag, which Dependabot moves to each new minor release (#126).
+  # Lookout's own X.Y tag, which Dependabot moves to each new minor release (#126). That
+  # check needs ghcr.io/adrianeyre/lookout to exist: it errors with "Image not found" until
+  # the release workflow has published the first Image.
   - package-ecosystem: docker-compose
     directory: /
     schedule:
