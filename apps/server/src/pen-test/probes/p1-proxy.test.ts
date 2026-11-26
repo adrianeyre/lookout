@@ -147,6 +147,13 @@ describe('P1 H2: the allowlist refuses everything outside ADR-0011', () => {
     ['DELETE', '/images/alpine'],
     ['DELETE', '/volumes/data'],
     ['POST', '/containers/prune'],
+    // Site Stats read /system/df only: never prune, and nothing else under /system.
+    ['POST', '/system/prune'],
+    ['POST', '/volumes/prune'],
+    ['POST', '/images/prune'],
+    ['POST', '/build/prune'],
+    ['GET', '/system/events'],
+    ['GET', '/system/df/../../info'],
   ];
 
   for (const [method, target] of outside) {
@@ -164,6 +171,7 @@ describe('P1 H2: the allowlist refuses everything outside ADR-0011', () => {
       ['GET', '/containers/victim/logs?follow=1'],
       ['GET', '/containers/victim/stats?stream=0'],
       ['GET', '/images/sha256:abc/json'],
+      ['GET', '/v1.47/system/df'],
       ['POST', '/containers/victim/start'],
       ['POST', '/containers/victim/stop'],
       ['POST', '/containers/victim/restart'],

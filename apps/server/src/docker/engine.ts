@@ -7,6 +7,7 @@ import {
   type LogLine,
 } from '@lookout/shared';
 import type { DockerClient, LogOptions } from './client.ts';
+import { diskUsageFromEngine, type DiskUsageReport, type EngineDiskUsage } from './disk-usage.ts';
 import {
   LineSplitter,
   LogFrameDecoder,
@@ -72,6 +73,13 @@ export const MAX_ENGINE_BODY_BYTES = 4 * 1024 * 1024;
  * not memory.
  */
 export const MAX_ENGINE_LIST_BYTES = 64 * 1024 * 1024;
+
+/**
+ * The most of a /system/df answer Lookout reads. It lists every Image, Container, volume and
+ * build-cache record, so it can be large; it is read once a day and on "Measure now", and only
+ * sizes and Compose Project labels are kept from it.
+ */
+export const MAX_ENGINE_DF_BYTES = 64 * 1024 * 1024;
 
 /** An Engine answer longer than Lookout reads. Its text never reaches the browser. */
 export class EngineBodyTooLarge extends Error {
@@ -241,9 +249,10 @@ export class EngineDockerClient implements DockerClient {
     method: 'GET' | 'POST' | 'DELETE',
     path: string,
     query: Query = {},
+    limit = MAX_ENGINE_BODY_BYTES,
   ): Promise<T | null> {
     const response = await this.#request(method, path, query);
-    const text = await readBody(response);
+    const text = await readBody(response, limit);
     const status = response.statusCode ?? 0;
     if (status >= 400) {
       throw new EngineError(status, errorBody(text), text);
@@ -409,5 +418,10 @@ export class EngineDockerClient implements DockerClient {
   async removeContainer(id: string): Promise<void> {
     // Never force-remove a running Container, and never delete its volumes (FR-25).
     await this.#call('DELETE', this.#containerPath(id), { force: false, v: false });
+  }
+
+  async diskUsage(): Promise<DiskUsageReport> {
+    const raw = await this.#call<EngineDiskUsage>('GET', '/system/df', {}, MAX_ENGINE_DF_BYTES);
+    return diskUsageFromEngine(raw);
   }
 }

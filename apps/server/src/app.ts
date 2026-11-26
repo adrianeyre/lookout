@@ -10,7 +10,10 @@ import {
   LIVE_STREAM_PATH,
   LOG_TAIL_OPTIONS,
   SITE_ID,
+  STATS_MEASURE_PATH,
+  STATS_PATH,
   actionRefusal,
+  isStatsRange,
   isContainerAction,
   isSecretField,
   isSelf,
@@ -31,7 +34,9 @@ import {
   MIN_PASSWORD_LENGTH,
   type SecretValue,
   type SessionInfo,
+  type SiteStats,
   type SitesSnapshot,
+  type StatsOverview,
 } from '@lookout/shared';
 import { isIP } from 'node:net';
 import { isAllowedOrigin } from './auth/origin.ts';
@@ -60,6 +65,7 @@ import { DiskReader } from './metrics/disks.ts';
 import { HostSampler } from './sampler.ts';
 import type { SiteChecker } from './sites/check.ts';
 import { SiteMonitor } from './sites/monitor.ts';
+import { StatsService } from './stats/service.ts';
 import { loadStaticFiles } from './static.ts';
 
 declare module 'fastify' {
@@ -110,6 +116,13 @@ export interface AppOptions {
   folderScanDelayMs?: number;
   /** Where the password is kept. Defaults to one opened from config (tests replace it). */
   passwordStore?: PasswordStore;
+  /** Whether to start Site Stats (reading access logs, measuring sizes). Off in most unit tests. */
+  startSiteStats?: boolean;
+  /** How often Site Stats write their open totals, and read the access logs. */
+  siteStatsWriteMs?: number;
+  siteStatsPollMs?: number;
+  /** How long after start the first size measurement runs, when today has none (default 60 s). */
+  measureDelayMs?: number;
 }
 
 /** Most log lines sent in one event; a busier log is sent in several. */
@@ -215,7 +228,7 @@ interface EventStream<Events> {
 export const DEFAULT_WEB_DIST = fileURLToPath(new URL('../../web/dist/', import.meta.url));
 
 /** Page routes served by the SPA. */
-const PAGES = ['/', '/containers', '/containers/:id', '/websites', '/settings'];
+const PAGES = ['/', '/containers', '/containers/:id', '/websites', '/websites/:id', '/settings'];
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const { config, docker } = options;
@@ -330,6 +343,21 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   });
   // Container Hosted Sites follow the Container list, which follows Docker events.
   store.subscribe((snapshot) => siteMonitor.updateContainers(snapshot));
+  // Site Stats (ADR-0013, ADR-0014): visitors, uptime and sizes, kept as daily totals.
+  const stats = new StatsService({
+    config,
+    docker,
+    hostRoot,
+    sites: siteMonitor,
+    containers: () => store.snapshot.containers,
+    log: app.log,
+    now,
+    ...(options.siteStatsWriteMs !== undefined ? { writeMs: options.siteStatsWriteMs } : {}),
+    ...(options.siteStatsPollMs !== undefined ? { pollMs: options.siteStatsPollMs } : {}),
+    ...(options.measureDelayMs !== undefined
+      ? { firstMeasureDelayMs: options.measureDelayMs }
+      : {}),
+  });
   const logFlushMs = options.logFlushMs ?? 50;
   const settings: LiveEvents['settings'] = {
     thresholds: { warnPercent: config.warnPercent, criticalPercent: config.criticalPercent },
@@ -900,6 +928,42 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return reply.code(202).send(folderScanner.snapshot satisfies FolderScan);
   });
 
+  app.get(STATS_PATH, async (): Promise<StatsOverview> => stats.overview());
+
+  const statsUnavailable = (reply: FastifyReply) =>
+    reply.code(503).send({ error: stats.error ?? 'Site Stats are unavailable' } satisfies ApiError);
+
+  // A Hosted Site's stats. It takes an ID, never a URL, and a range from a closed set.
+  app.get<{ Params: { id: string }; Querystring: { range?: string } }>(
+    '/api/stats/sites/:id',
+    async (request, reply) => {
+      const { id } = request.params;
+      const range = request.query.range ?? '7d';
+      if (!isStatsRange(range)) {
+        return reply
+          .code(400)
+          .send({ error: 'range must be 24h, 7d, 30d or 90d' } satisfies ApiError);
+      }
+      if (!stats.available) return statsUnavailable(reply);
+      const result = SITE_ID.test(id) ? stats.siteStats(id, range) : null;
+      if (result === null) {
+        return reply.code(404).send({ error: 'No such Hosted Site' } satisfies ApiError);
+      }
+      return result satisfies SiteStats;
+    },
+  );
+
+  // "Measure now": sizes every Hosted Site and Docker's disk usage. It takes nothing and only
+  // reads (nothing is pruned); one runs at a time. The Origin check above makes it CSRF-safe.
+  app.post(STATS_MEASURE_PATH, async (_request, reply) => {
+    const outcome = stats.measureNow();
+    if (outcome.result === 'unavailable') return statsUnavailable(reply);
+    if (outcome.result === 'busy') {
+      return reply.code(409).send({ error: 'Sizes are already being measured' } satisfies ApiError);
+    }
+    return reply.code(202).send(stats.measureState() satisfies StatsOverview['measure']);
+  });
+
   const distDir = options.webDistDir ?? DEFAULT_WEB_DIST;
   if (existsSync(distDir)) {
     const files = await loadStaticFiles(distDir);
@@ -941,6 +1005,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     app.addHook('onReady', async () => folderScanner.start());
   }
   app.addHook('onClose', async () => folderScanner.stop());
+  if (options.startSiteStats !== false) {
+    app.addHook('onReady', async () => stats.start());
+  }
+  app.addHook('onClose', async () => stats.stop());
 
   return app;
 }

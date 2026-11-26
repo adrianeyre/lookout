@@ -1,4 +1,11 @@
 import { isIP } from 'node:net';
+import path from 'node:path';
+import {
+  PRIVATE_FOLDERS,
+  STATS_RETENTION_DEFAULT_DAYS,
+  STATS_RETENTION_MAX_DAYS,
+  STATS_RETENTION_MIN_DAYS,
+} from '@lookout/shared';
 import { parsePasswordHash } from './auth/password.ts';
 
 export interface Config {
@@ -28,6 +35,18 @@ export interface Config {
   secureCookie: boolean;
   /** Hosted Site URLs from LOOKOUT_SITES (PRD §14). */
   sites: string[];
+  /**
+   * The folder on the Host a LOOKOUT_SITES entry serves (`URL=/folder`), by URL: a site with
+   * no Container is sized by it (Site Stats). Only ever read, through the Host root.
+   */
+  siteFolders: Record<string, string>;
+  /**
+   * LOOKOUT_ACCESS_LOGS: the reverse proxy's access logs (Caddy JSON), a path or a `*` pattern
+   * in its file name, under LOOKOUT_HOST_ROOT. Null hides the visitor figures (ADR-0014).
+   */
+  accessLogs: string | null;
+  /** Days of daily Site Stats kept (LOOKOUT_STATS_RETENTION_DAYS, ADR-0013). */
+  statsRetentionDays: number;
   siteCheckIntervalMs: number;
   siteTimeoutMs: number;
   siteSlowMs: number;
@@ -159,7 +178,13 @@ export function loadConfig(env: Env = process.env, options: LoadOptions = {}): C
     );
   }
 
-  const sites = siteUrls(read('LOOKOUT_SITES') ?? '', problems);
+  const { urls: sites, folders: siteFolders } = siteUrls(read('LOOKOUT_SITES') ?? '', problems);
+  const statsRetentionDays = integer(
+    'LOOKOUT_STATS_RETENTION_DAYS',
+    STATS_RETENTION_DEFAULT_DAYS,
+    STATS_RETENTION_MIN_DAYS,
+    STATS_RETENTION_MAX_DAYS,
+  );
   const siteCheckIntervalSeconds = integer('LOOKOUT_SITE_CHECK_INTERVAL_SECONDS', 60, 1, 3600);
   const siteTimeoutMs = integer('LOOKOUT_SITE_TIMEOUT_MS', 10_000, 100, 60_000);
   const siteSlowMs = integer('LOOKOUT_SITE_SLOW_MS', 2000, 1, 60_000);
@@ -175,6 +200,12 @@ export function loadConfig(env: Env = process.env, options: LoadOptions = {}): C
     problems.push(
       `LOOKOUT_TLS_CRITICAL_DAYS (${tlsCriticalDays}) must be lower than LOOKOUT_TLS_WARN_DAYS (${tlsWarnDays})`,
     );
+  }
+
+  const accessLogs = read('LOOKOUT_ACCESS_LOGS') ?? null;
+  if (accessLogs !== null) {
+    const problem = accessLogProblem(accessLogs, hostRoot);
+    if (problem) problems.push(`LOOKOUT_ACCESS_LOGS ${problem} (got "${accessLogs}")`);
   }
 
   const dataDir = read('LOOKOUT_DATA_DIR') ?? null;
@@ -234,6 +265,9 @@ export function loadConfig(env: Env = process.env, options: LoadOptions = {}): C
     hostnames,
     secureCookie: secureCookieRaw === 'true',
     sites,
+    siteFolders,
+    accessLogs,
+    statsRetentionDays,
     siteCheckIntervalMs: siteCheckIntervalSeconds * 1000,
     siteTimeoutMs,
     siteSlowMs,
@@ -266,21 +300,73 @@ export function parseSiteUrl(raw: string): { url: string } | { problem: string }
   return { url: url.href };
 }
 
-/** LOOKOUT_SITES: comma-separated URLs. Any invalid one stops startup. */
-function siteUrls(value: string, problems: string[]): string[] {
+/**
+ * LOOKOUT_SITES: comma-separated URLs, each optionally followed by `=/folder`, the folder on
+ * the Host it serves (a site with no Container, such as a static file server). The folder
+ * starts at the last `=/` in an entry, so a URL whose query has `=/` must encode it. Any
+ * invalid entry stops startup.
+ */
+function siteUrls(
+  value: string,
+  problems: string[],
+): { urls: string[]; folders: Record<string, string> } {
   const urls: string[] = [];
-  for (const raw of value.split(',').map((part) => part.trim())) {
-    if (raw === '') continue;
+  const folders: Record<string, string> = {};
+  for (const entry of value.split(',').map((part) => part.trim())) {
+    if (entry === '') continue;
+    const split = entry.lastIndexOf('=/');
+    const raw = split === -1 ? entry : entry.slice(0, split);
+    const folder = split === -1 ? null : entry.slice(split + 1);
     const parsed = parseSiteUrl(raw);
     if ('problem' in parsed) {
       // A URL with credentials is not echoed back.
       const shown = /@/.test(raw) ? 'a URL' : `"${raw}"`;
       problems.push(`LOOKOUT_SITES: ${shown} ${parsed.problem}`);
-    } else if (!urls.includes(parsed.url)) {
-      urls.push(parsed.url);
+      continue;
     }
+    if (folder !== null) {
+      const problem = siteFolderProblem(folder);
+      if (problem) {
+        problems.push(`LOOKOUT_SITES: the folder "${folder}" ${problem}`);
+        continue;
+      }
+      folders[parsed.url] = path.posix.normalize(folder).replace(/(.)\/$/, '$1');
+    }
+    if (!urls.includes(parsed.url)) urls.push(parsed.url);
   }
-  return urls;
+  return { urls, folders };
+}
+
+/**
+ * Why a site's folder (`URL=/folder`) is refused, or null. It is a path on the Host, read
+ * under the Host root only: absolute, with no `..`, and never a home folder (PRIVATE_FOLDERS),
+ * which the folder walk never enters either.
+ */
+export function siteFolderProblem(folder: string): string | null {
+  if (!folder.startsWith('/')) return 'must be an absolute path on the Host';
+  if (folder.split('/').includes('..')) return 'must not contain ..';
+  if (/[\0\n\r]/.test(folder)) return 'contains a control character';
+  const normal = path.posix.normalize(folder);
+  if (normal === '/') return 'must not be the whole Host';
+  if (PRIVATE_FOLDERS.some((p) => normal === p || normal.startsWith(`${p}/`))) {
+    return `is in ${PRIVATE_FOLDERS.join(' or ')}, which Lookout never reads`;
+  }
+  return null;
+}
+
+/**
+ * Why LOOKOUT_ACCESS_LOGS is refused, or null: an absolute path under the Host root, whose
+ * folder is literal and whose file name may hold `*` and `?`.
+ */
+export function accessLogProblem(value: string, hostRoot: string): string | null {
+  if (!value.startsWith('/')) return 'must be an absolute path';
+  if (value.split('/').includes('..')) return 'must not contain ..';
+  const root = hostRoot.replace(/\/+$/, '');
+  if (!value.startsWith(`${root}/`)) return `must be under LOOKOUT_HOST_ROOT (${root})`;
+  const dir = path.posix.dirname(value);
+  if (/[*?[\]]/.test(dir)) return 'may only use * and ? in the file name';
+  if (/[[\]]/.test(path.posix.basename(value))) return 'may only use * and ? as wildcards';
+  return null;
 }
 
 /** Words that mark a secret as a placeholder copied from an example, not a random value. */
