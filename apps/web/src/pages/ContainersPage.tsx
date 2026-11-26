@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import {
   CONTAINER_STATES,
   isFlagged,
@@ -130,7 +130,33 @@ function Filters({
   );
 }
 
-/** The Container list, grouped by Compose Project and filterable (FR-14 to FR-18). */
+/** Where this browser remembers which Compose Projects are closed. Every one starts open. */
+const COLLAPSED_KEY = 'lookout.containers.collapsed';
+
+function readCollapsed(): ReadonlySet<string> {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? '[]');
+    return new Set(
+      Array.isArray(saved) ? saved.filter((name): name is string => typeof name === 'string') : [],
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCollapsed(names: ReadonlySet<string>) {
+  try {
+    if (names.size === 0) localStorage.removeItem(COLLAPSED_KEY);
+    else localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...names]));
+  } catch {
+    // Not remembered, but still closed for now.
+  }
+}
+
+/**
+ * The Container list, grouped by Compose Project and filterable (FR-14 to FR-18). Each
+ * Project opens and closes from its heading, and starts open.
+ */
 export function ContainerList({
   snapshot,
   stats,
@@ -141,6 +167,15 @@ export function ContainerList({
   now: number;
 }) {
   const [filters, setFilters] = useState<ContainerFilters>(NO_FILTERS);
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(readCollapsed);
+  const baseId = useId();
+  const toggle = (name: string) =>
+    setCollapsed((before) => {
+      const next = new Set(before);
+      if (!next.delete(name)) next.add(name);
+      saveCollapsed(next);
+      return next;
+    });
   if (!snapshot.available) return <DockerUnavailable />;
   const shown = filterContainers(snapshot.containers, filters);
   const groups = groupByProject(shown);
@@ -153,23 +188,37 @@ export function ContainerList({
       {groups.length === 0 ? (
         <p className="muted">No Containers match.</p>
       ) : (
-        groups.map((group) => (
-          <section
-            key={group.name}
-            className="group"
-            aria-label={group.name}
-            data-testid="container-group"
-          >
-            <h2 className="group__title" data-testid="group-name">
-              <bdi>{group.name}</bdi>
-            </h2>
-            <ul className="rows">
-              {group.containers.map((container) => (
-                <ContainerRow key={container.id} container={container} stats={stats} now={now} />
-              ))}
-            </ul>
-          </section>
-        ))
+        groups.map((group) => {
+          const open = !collapsed.has(group.name);
+          const listId = `${baseId}-${groups.indexOf(group)}`;
+          return (
+            <section
+              key={group.name}
+              className="group"
+              aria-label={group.name}
+              data-testid="container-group"
+            >
+              <h2 className="group__title">
+                <button
+                  type="button"
+                  className="group__toggle"
+                  aria-expanded={open}
+                  aria-controls={listId}
+                  onClick={() => toggle(group.name)}
+                >
+                  <span className="group__chevron" aria-hidden="true" />
+                  <bdi data-testid="group-name">{group.name}</bdi>
+                  <span className="group__count">{group.containers.length}</span>
+                </button>
+              </h2>
+              <ul className="rows" id={listId} hidden={!open}>
+                {group.containers.map((container) => (
+                  <ContainerRow key={container.id} container={container} stats={stats} now={now} />
+                ))}
+              </ul>
+            </section>
+          );
+        })
       )}
     </>
   );

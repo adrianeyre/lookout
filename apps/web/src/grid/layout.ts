@@ -204,6 +204,13 @@ export const PAGE_WIDGETS: Readonly<Record<GridPage, readonly WidgetSpec[]>> = {
       min: { w: 4, h: 16 },
       grows: 80,
     },
+    {
+      id: 'settings.password',
+      title: 'Password',
+      initial: { x: 0, y: 16, w: 12, h: 16 },
+      min: { w: 4, h: 12 },
+      grows: 60,
+    },
   ],
 };
 
@@ -338,6 +345,46 @@ function rise(layout: WidgetLayout, zone: Zone): WidgetLayout {
       next[id] = risen;
     }
     placed.push(risen);
+  }
+  return next;
+}
+
+/**
+ * The layout as it is drawn with `absent` Widgets left out (WidgetGrid's `empty`): a shown
+ * Widget beside the cells an absent one would take spreads sideways into them, so a Container
+ * with no Hosted Sites shows its Networks the full width of that column rather than beside a
+ * blank space. Only where those cells are free in every row it covers, and never kept: the
+ * Widget's own width is unchanged, and it draws narrower again when the absent one comes back.
+ */
+export function spreadIntoAbsent(layout: WidgetLayout, absent: readonly string[]): WidgetLayout {
+  let next = layout;
+  for (const gap of absent) {
+    const hole = next[gap];
+    if (!hole || hole.zone !== 'main') continue;
+    const shown = widgetsIn(next, 'main');
+    const free = (cell: Cell, except: string) =>
+      shown.every((other) => other === except || !overlaps(cell, at(next, other)));
+    const rowsMeet = (cell: Cell) => cell.y < hole.y + hole.h && hole.y < cell.y + cell.h;
+    // The Widget to its right spreads left first, then the one to its left spreads right.
+    const right = shown.find((id) => at(next, id).x === hole.x + hole.w && rowsMeet(at(next, id)));
+    const left = shown.find(
+      (id) => at(next, id).x + at(next, id).w === hole.x && rowsMeet(at(next, id)),
+    );
+    for (const [id, side] of [
+      [right, 'left'],
+      [left, 'right'],
+    ] as const) {
+      if (id === undefined) continue;
+      const placement = at(next, id);
+      const strip: Cell = { x: hole.x, y: placement.y, w: hole.w, h: placement.h };
+      if (!free(strip, id)) continue;
+      if (next === layout) next = { ...layout };
+      next[id] =
+        side === 'left'
+          ? { ...placement, x: hole.x, w: placement.w + hole.w }
+          : { ...placement, w: placement.w + hole.w };
+      break;
+    }
   }
   return next;
 }

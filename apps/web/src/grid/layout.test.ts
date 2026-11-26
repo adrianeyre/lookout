@@ -13,6 +13,8 @@ import {
   rowsFor,
   serialiseLayout,
   setWidgetHidden,
+  spreadIntoAbsent,
+  withoutWidgets,
   widgetsIn,
   type Cell,
   type GridPage,
@@ -273,5 +275,33 @@ describe('a Widget made taller can be made smaller again', () => {
   it('is never made smaller than its minimum', () => {
     const layout = resizeWidget(defaultLayout('host'), 'host.cpu', 4, 1);
     expect(fitToContent(layout, { 'host.cpu': 8 })['host.cpu']!.h).toBe(6);
+  });
+});
+
+describe('spreadIntoAbsent', () => {
+  it('draws Networks across the cells a Container with no Hosted Sites leaves', () => {
+    const kept = withoutWidgets(defaultLayout('container'), ['container.sites']);
+    const drawn = spreadIntoAbsent(kept, ['container.sites']);
+    const sites = kept['container.sites']!;
+    expect(drawn['container.networks']).toMatchObject({ x: sites.x, w: 6 });
+    expectNoOverlaps(drawn);
+    // Never kept: the layout itself is unchanged.
+    expect(kept['container.networks']).toMatchObject({ x: 9, w: 3 });
+  });
+
+  it('leaves the layout alone when nothing is absent', () => {
+    const layout = defaultLayout('container');
+    expect(spreadIntoAbsent(layout, [])).toBe(layout);
+  });
+
+  it('does not spread over another Widget', () => {
+    const kept = withoutWidgets(defaultLayout('container'), ['container.sites']);
+    // Mounts moved up into the absent cells' rows, so nothing may spread there.
+    const blocked = {
+      ...kept,
+      'container.mounts': { ...kept['container.mounts']!, x: 6, y: 12, w: 3 },
+    };
+    const drawn = spreadIntoAbsent(blocked, ['container.sites']);
+    expect(drawn['container.networks']).toMatchObject({ x: 9, w: 3 });
   });
 });

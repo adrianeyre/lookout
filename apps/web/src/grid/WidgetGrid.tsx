@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom';
 import { InWidget } from '../components/Card.tsx';
 import {
   filled,
+  spreadIntoAbsent,
   fitToContent,
   GRID,
   moveWidget,
@@ -190,8 +191,9 @@ export function WidgetGrid({
   const hintId = useId();
   const shown = drag?.preview ?? layout;
   // As drawn, each Widget also reaches down to the one under it, so the Grid has no holes.
-  const drawn = filled(shown);
-  const before = drag ? filled(layout) : drawn;
+  // A Widget beside one with nothing to show spreads into its cells.
+  const drawn = filled(spreadIntoAbsent(shown, absent));
+  const before = drag ? filled(spreadIntoAbsent(layout, absent)) : drawn;
 
   // Each Widget's height as its content needs it, measured whenever the content changes size.
   const observer = useRef<ResizeObserver | null>(null);
